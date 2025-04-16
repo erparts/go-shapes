@@ -1,0 +1,84 @@
+package shapes
+
+import (
+	"image/color"
+
+	"github.com/hajimehoshi/ebiten/v2"
+)
+
+// Renderer is a helper type for basic shape rendering which
+// reuses vertices and options for slightly reduced memory usage.
+type Renderer struct {
+	vertices []ebiten.Vertex
+	indices  []uint16
+	opts     ebiten.DrawTrianglesShaderOptions
+}
+
+func NewRenderer() *Renderer {
+	var renderer Renderer
+	renderer.vertices = make([]ebiten.Vertex, 4)
+	renderer.SetColor(color.RGBA{255, 255, 255, 255})
+	renderer.indices = []uint16{0, 1, 2, 0, 2, 3}
+	renderer.opts.Uniforms = make(map[string]any, 8)
+	return &renderer
+}
+
+func (r *Renderer) GetColorF32() [4]float32 {
+	return [4]float32{r.vertices[0].ColorR, r.vertices[0].ColorG, r.vertices[0].ColorB, r.vertices[0].ColorA}
+}
+
+// SetColor sets the color of all vertices, unless vertexIndices are specifically provided, in
+// which case only the given indices will be set. In general, most shaders use vertex 0 as top-left,
+// vertex 1 as top-right, vertex 2 as bottom-right, vertex 3 as bottom-left, but this is shader
+// dependent (or even variable in some cases).
+func (r *Renderer) SetColor(clr color.Color, vertexIndices ...int) {
+	clrF32 := colorToF32(clr)
+	r.SetColorF32(clrF32[0], clrF32[1], clrF32[2], clrF32[3], vertexIndices...)
+}
+
+func (r *Renderer) SetColorF32(red, green, blue, alpha float32, vertexIndices ...int) {
+	if len(vertexIndices) == 0 {
+		vertexIndices = []int{0, 1, 2, 3}
+	}
+	for _, i := range vertexIndices {
+		r.vertices[i].ColorR = red
+		r.vertices[i].ColorG = green
+		r.vertices[i].ColorB = blue
+		r.vertices[i].ColorA = alpha
+	}
+}
+
+func (r *Renderer) SetBlend(blend ebiten.Blend) {
+	r.opts.Blend = blend
+}
+
+func (r *Renderer) setDstRectCoords(minX, minY, maxX, maxY float32) {
+	r.vertices[0].DstX = minX
+	r.vertices[0].DstY = minY
+	r.vertices[1].DstX = maxX
+	r.vertices[1].DstY = minY
+	r.vertices[2].DstX = maxX
+	r.vertices[2].DstY = maxY
+	r.vertices[3].DstX = minX
+	r.vertices[3].DstY = maxY
+}
+
+func (r *Renderer) setSrcRectCoords(minX, minY, maxX, maxY float32) {
+	r.vertices[0].SrcX = minX
+	r.vertices[0].SrcY = minY
+	r.vertices[1].SrcX = maxX
+	r.vertices[1].SrcY = minY
+	r.vertices[2].SrcX = maxX
+	r.vertices[2].SrcY = maxY
+	r.vertices[3].SrcX = minX
+	r.vertices[3].SrcY = maxY
+}
+
+func (r *Renderer) setFlatCustomVAs(cva0, cva1, cva2, cva3 float32) {
+	for i := range len(r.vertices) {
+		r.vertices[i].Custom0 = cva0
+		r.vertices[i].Custom1 = cva1
+		r.vertices[i].Custom2 = cva2
+		r.vertices[i].Custom3 = cva3
+	}
+}

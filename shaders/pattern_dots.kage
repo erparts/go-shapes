@@ -1,0 +1,22 @@
+//kage:unit pixels
+package main
+
+func Fragment(targetCoords vec4, _ vec2, color vec4, customVAs vec4) vec4 {
+	const HexRatio = 0.86602540378
+
+	radius := customVAs[0]
+	horzSpacing := customVAs[1]
+	shift := customVAs.zw
+	spacing := vec2(horzSpacing, horzSpacing*HexRatio)
+
+	position := (targetCoords.xy - imageDstOrigin()) - shift
+	scaledPosition := position / spacing
+	offset := mod(floor(scaledPosition.y), 2.0) * 0.5
+	adjustedX := scaledPosition.x - offset
+	cell := floor(vec2(adjustedX, scaledPosition.y))
+	cellCenter := vec2(cell.x+offset+0.5, cell.y+0.5)
+	dist := distance(position, cellCenter*spacing)
+	alpha := 1.0 - smoothstep(radius-1.333, radius, dist)
+	alpha = pow(alpha, 1.0/2.2)
+	return color * alpha
+}
