@@ -6,7 +6,6 @@ import (
 
 // TileDotsHex draws dots of the given radius distributed in a hexagonal
 // lattice. HorzSpacing should always be at least twice the radius.
-// TODO: offsets x/y
 func (r *Renderer) TileDotsHex(target *ebiten.Image, radius, horzSpacing, xOffset, yOffset float32) {
 	bounds := target.Bounds()
 	minX, minY := float32(bounds.Min.X), float32(bounds.Min.Y)
@@ -15,6 +14,6 @@ func (r *Renderer) TileDotsHex(target *ebiten.Image, radius, horzSpacing, xOffse
 	r.setFlatCustomVAs(radius, horzSpacing, xOffset, yOffset)
 
 	// draw shader
-	ensureShaderPatternDotsLoaded()
-	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderPatternDots, &r.opts)
+	ensureShaderTileDotsHexLoaded()
+	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderTileDotsHex, &r.opts)
 }

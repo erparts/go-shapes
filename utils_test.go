@@ -59,6 +59,7 @@ type TestApp struct {
 }
 
 func NewTestApp(drawer func(canvas *ebiten.Image, ctx TestAppCtx), images ...*ebiten.Image) *TestApp {
+	//ebiten.SetVsyncEnabled(false)
 	var app TestApp
 	app.Images = images
 	app.LeftClick = image.Pt((128*4)/3, 128)
@@ -80,7 +81,7 @@ func (app *TestApp) Update() error {
 			app.RightClick = image.Pt(x, y)
 		}
 	}
-	ebiten.SetWindowTitle(fmt.Sprintf("LeftClick (%d, %d), RightClick (%d, %d)", app.LeftClick.X, app.LeftClick.Y, app.RightClick.X, app.RightClick.Y))
+	ebiten.SetWindowTitle(fmt.Sprintf("LeftClick (%d, %d), RightClick (%d, %d) [%.02f FPS]", app.LeftClick.X, app.LeftClick.Y, app.RightClick.X, app.RightClick.Y, ebiten.ActualFPS()))
 	return app.BaseTestApp.Update()
 }
 

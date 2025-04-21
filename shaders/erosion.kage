@@ -19,7 +19,7 @@ func Fragment(targetCoords vec4, sourceCoords vec2, color vec4, customVAs vec4) 
 				break
 			}
 			offset := vec2(x, y) - scanOffset
-			sample := floor(sourceCoords+offset) + vec2(0.5, 0.5)
+			sample := floor(sourceCoords+offset) + vec2(0.5)
 			clr := imageSrc0At(sample)
 			dist := distance(sourceCoords, sample)
 			if dist <= halfThick {

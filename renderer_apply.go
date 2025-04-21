@@ -84,15 +84,201 @@ func (r *Renderer) ApplyOutline(target *ebiten.Image, mask *ebiten.Image, ox, oy
 	r.opts.Images[0] = nil
 }
 
+// ApplyBlur applies a gaussian blur to the given mask and draws it onto the given target.
 // colorMix = 0 will use the renderer's vertex colors; colorMix = 1 will use the original mask colors.
+//
+// For radiuses above 4, you typically will prefer using ApplyBlur2.
 func (r *Renderer) ApplyBlur(target *ebiten.Image, mask *ebiten.Image, ox, oy, radius, colorMix float32) {
-	// ...
+	if radius > 32 {
+		panic("radius can't exceed 32")
+	}
+
+	srcBounds := mask.Bounds()
+	srcWidth, srcHeight := float32(srcBounds.Dx()), float32(srcBounds.Dy())
+	hr32 := radius / 2.0
+	dstBounds := target.Bounds()
+	dstMinX, dstMinY := float32(dstBounds.Min.X), float32(dstBounds.Min.Y)
+	minX, minY := dstMinX+ox-hr32, dstMinY+oy-hr32
+	maxX, maxY := dstMinX+ox+srcWidth+hr32, dstMinY+oy+srcHeight+hr32
+	r.setDstRectCoords(minX-1, minY-1, maxX+1, maxY+1)
+
+	srcMinX, srcMinY := float32(srcBounds.Min.X), float32(srcBounds.Min.Y)
+	srcMaxX, srcMaxY := float32(srcBounds.Max.X), float32(srcBounds.Max.Y)
+	r.setSrcRectCoords(srcMinX-hr32-1, srcMinY-hr32-1, srcMaxX+hr32+1.0, srcMaxY+hr32+1.0)
+	r.setFlatCustomVAs(radius, colorMix, 0, 0)
+
+	// draw shader
+	r.opts.Images[0] = mask
+	ensureShaderBlurLoaded()
+	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderBlur, &r.opts)
+	r.opts.Images[0] = nil
 }
 
-func (r *Renderer) ApplyHardShadow(target *ebiten.Image, mask *ebiten.Image, ox, oy, thickness float32) {
-	// ...
+// ApplyBlur2 is similar to ApplyBlur, but uses two 1D passes instead of a single 2D pass.
+// This greatly reduces the amount of sampled pixels for the shader, and despite breaking
+// batching, tends to be much more efficient than ApplyBlur.
+func (r *Renderer) ApplyBlur2(target *ebiten.Image, mask *ebiten.Image, ox, oy, radius, colorMix float32) {
+	if radius > 32 {
+		panic("radius can't exceed 32")
+	}
+
+	srcBounds := mask.Bounds()
+	w32, h32 := float32(srcBounds.Dx()), float32(srcBounds.Dy())+radius
+	w, h := int(w32), int(h32)
+	r.ensureOffscreenSize(w, h)
+	preBlend := r.opts.Blend
+	r.opts.Blend = ebiten.BlendCopy
+	hr32 := radius / 2.0
+	r.ApplyVertBlur(r.tmp, mask, 0, hr32+1.0, radius, 1.0)
+	r.opts.Blend = preBlend
+
+	// horizontal blur is done manually to account for the exact tmp bounds
+	dstBounds := target.Bounds()
+	dstMinX, dstMinY := float32(dstBounds.Min.X), float32(dstBounds.Min.Y)
+	minX, minY := dstMinX+ox-hr32, dstMinY+oy
+	maxX, maxY := dstMinX+ox+w32+hr32, dstMinY+oy+h32
+	r.setDstRectCoords(minX-1, minY, maxX+1, maxY)
+
+	r.setSrcRectCoords(-hr32-1, 0, w32+hr32+1, h32)
+	r.setFlatCustomVAs(radius, colorMix, 0, 0)
+
+	// draw shader
+	r.opts.Images[0] = r.tmp
+	ensureShaderHorzBlurLoaded()
+	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderHorzBlur, &r.opts)
+	r.opts.Images[0] = nil
+}
+
+func (r *Renderer) ApplyVertBlur(target *ebiten.Image, mask *ebiten.Image, ox, oy, radius, colorMix float32) {
+	if radius > 32 {
+		panic("radius can't exceed 32")
+	}
+
+	srcBounds := mask.Bounds()
+	srcWidth, srcHeight := float32(srcBounds.Dx()), float32(srcBounds.Dy())
+	hr32 := radius / 2.0
+	dstBounds := target.Bounds()
+	dstMinX, dstMinY := float32(dstBounds.Min.X), float32(dstBounds.Min.Y)
+	minX, minY := dstMinX+ox, dstMinY+oy-hr32
+	maxX, maxY := dstMinX+ox+srcWidth, dstMinY+oy+srcHeight+hr32
+	r.setDstRectCoords(minX, minY-1, maxX, maxY+1)
+
+	srcMinX, srcMinY := float32(srcBounds.Min.X), float32(srcBounds.Min.Y)
+	srcMaxX, srcMaxY := float32(srcBounds.Max.X), float32(srcBounds.Max.Y)
+	r.setSrcRectCoords(srcMinX, srcMinY-hr32-1, srcMaxX, srcMaxY+hr32+1.0)
+	r.setFlatCustomVAs(radius, colorMix, 0, 0)
+
+	// draw shader
+	r.opts.Images[0] = mask
+	ensureShaderVertBlurLoaded()
+	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderVertBlur, &r.opts)
+	r.opts.Images[0] = nil
+}
+
+func (r *Renderer) ApplyHorzBlur(target *ebiten.Image, mask *ebiten.Image, ox, oy, radius, colorMix float32) {
+	if radius > 32 {
+		panic("radius can't exceed 32")
+	}
+
+	srcBounds := mask.Bounds()
+	srcWidth, srcHeight := float32(srcBounds.Dx()), float32(srcBounds.Dy())
+	hr32 := radius / 2.0
+	dstBounds := target.Bounds()
+	dstMinX, dstMinY := float32(dstBounds.Min.X), float32(dstBounds.Min.Y)
+	minX, minY := dstMinX+ox-hr32, dstMinY+oy
+	maxX, maxY := dstMinX+ox+srcWidth+hr32, dstMinY+oy+srcHeight
+	r.setDstRectCoords(minX-1, minY, maxX+1, maxY)
+
+	srcMinX, srcMinY := float32(srcBounds.Min.X), float32(srcBounds.Min.Y)
+	srcMaxX, srcMaxY := float32(srcBounds.Max.X), float32(srcBounds.Max.Y)
+	r.setSrcRectCoords(srcMinX-hr32-1, srcMinY, srcMaxX+hr32+1.0, srcMaxY)
+	r.setFlatCustomVAs(radius, colorMix, 0, 0)
+
+	// draw shader
+	r.opts.Images[0] = mask
+	ensureShaderHorzBlurLoaded()
+	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderHorzBlur, &r.opts)
+	r.opts.Images[0] = nil
+}
+
+type Clamping uint8
+
+const (
+	ClampNone   Clamping = 0b0000
+	ClampTop    Clamping = 0b1000
+	ClampBottom Clamping = 0b0100
+	ClampLeft   Clamping = 0b0010
+	ClampRight  Clamping = 0b0001
+
+	ClampTopLeft     Clamping = ClampTop | ClampLeft
+	ClampTopRight    Clamping = ClampTop | ClampRight
+	ClampBottomLeft  Clamping = ClampBottom | ClampLeft
+	ClampBottomRight Clamping = ClampBottom | ClampRight
+)
+
+func (r *Renderer) ApplyHardShadow(target *ebiten.Image, mask *ebiten.Image, ox, oy, xOffset, yOffset float32, clamping Clamping) {
+	dstBounds, srcBounds := target.Bounds(), mask.Bounds()
+	srcWidth, srcHeight := float32(srcBounds.Dx()), float32(srcBounds.Dy())
+	dstMinX, dstMinY := float32(dstBounds.Min.X), float32(dstBounds.Min.Y)
+	leftOff, topOff := min(0, xOffset), min(0, yOffset)
+	rightOff, bottomOff := max(0, xOffset), max(0, yOffset)
+	minX, minY := dstMinX+ox+leftOff, dstMinY+oy+topOff
+	maxX, maxY := dstMinX+srcWidth+ox+rightOff, dstMinY+srcHeight+oy+bottomOff
+	r.setDstRectCoords(minX, minY, maxX, maxY)
+
+	srcMinX, srcMinY := float32(srcBounds.Min.X), float32(srcBounds.Min.Y)
+	srcMaxX, srcMaxY := float32(srcBounds.Max.X), float32(srcBounds.Max.Y)
+	r.setSrcRectCoords(srcMinX+leftOff, srcMinY+topOff, srcMaxX+rightOff, srcMaxY+bottomOff)
+	r.setFlatCustomVAs(xOffset, yOffset, float32(clamping), 0)
+
+	// draw shader
+	r.opts.Images[0] = mask
+	ensureShaderHardShadowLoaded()
+	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderHardShadow, &r.opts)
+	r.opts.Images[0] = nil
+}
+
+func (r *Renderer) ApplyShadow(target *ebiten.Image, mask *ebiten.Image, ox, oy, xOffset, yOffset, radius float32, clamping Clamping) {
+	if radius > 32 {
+		panic("radius can't exceed 32")
+	}
+
+	dstBounds, srcBounds := target.Bounds(), mask.Bounds()
+	srcWidth, srcHeight := float32(srcBounds.Dx()), float32(srcBounds.Dy())
+	dstMinX, dstMinY := float32(dstBounds.Min.X), float32(dstBounds.Min.Y)
+	leftOff, topOff := min(0, xOffset), min(0, yOffset)
+	rightOff, bottomOff := max(0, xOffset), max(0, yOffset)
+	hr32 := radius / 2.0
+	topHR32, bottomHR32, leftHR32, rightHR32 := hr32, hr32, hr32, hr32
+	if clamping&ClampBottom != 0 {
+		bottomHR32 = 0
+	}
+	if clamping&ClampTop != 0 {
+		topHR32 = 0
+	}
+	if clamping&ClampLeft != 0 {
+		leftHR32 = 0
+	}
+	if clamping&ClampRight != 0 {
+		rightHR32 = 0
+	}
+
+	minX, minY := dstMinX+ox+leftOff-leftHR32, dstMinY+oy+topOff-topHR32
+	maxX, maxY := dstMinX+srcWidth+ox+rightOff+rightHR32, dstMinY+srcHeight+oy+bottomOff+bottomHR32
+	r.setDstRectCoords(minX, minY, maxX, maxY)
+
+	srcMinX, srcMinY := float32(srcBounds.Min.X), float32(srcBounds.Min.Y)
+	srcMaxX, srcMaxY := float32(srcBounds.Max.X), float32(srcBounds.Max.Y)
+	r.setSrcRectCoords(srcMinX+leftOff-leftHR32, srcMinY+topOff-topHR32, srcMaxX+rightOff+rightHR32, srcMaxY+bottomOff+bottomHR32)
+	r.setFlatCustomVAs(xOffset, yOffset, radius, float32(clamping))
+
+	// draw shader
+	r.opts.Images[0] = mask
+	ensureShaderShadowLoaded()
+	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderShadow, &r.opts)
+	r.opts.Images[0] = nil
 }
 
 func (r *Renderer) ApplyGlow(target *ebiten.Image, mask *ebiten.Image, radius, threshold, colorMix float32) {
-	// ...
+	panic("unimplemented")
 }

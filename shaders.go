@@ -33,8 +33,26 @@ var shaderErosionSrc []byte
 //go:embed shaders/outline.kage
 var shaderOutlineSrc []byte
 
-//go:embed shaders/pattern_dots.kage
-var shaderPatternDotsSrc []byte
+//go:embed shaders/blur.kage
+var shaderBlurSrc []byte
+
+//go:embed shaders/horz_blur.kage
+var shaderHorzBlurSrc []byte
+
+//go:embed shaders/vert_blur.kage
+var shaderVertBlurSrc []byte
+
+//go:embed shaders/glow.kage
+var shaderGlowSrc []byte
+
+//go:embed shaders/shadow.kage
+var shaderShadowSrc []byte
+
+//go:embed shaders/hard_shadow.kage
+var shaderHardShadowSrc []byte
+
+//go:embed shaders/tile_dots_hex.kage
+var shaderTileDotsHexSrc []byte
 
 var shaderRect *ebiten.Shader
 var shaderLine *ebiten.Shader
@@ -45,7 +63,13 @@ var shaderHexagon *ebiten.Shader
 var shaderExpansion *ebiten.Shader
 var shaderErosion *ebiten.Shader
 var shaderOutline *ebiten.Shader
-var shaderPatternDots *ebiten.Shader
+var shaderBlur *ebiten.Shader
+var shaderHorzBlur *ebiten.Shader
+var shaderVertBlur *ebiten.Shader
+var shaderGlow *ebiten.Shader
+var shaderShadow *ebiten.Shader
+var shaderHardShadow *ebiten.Shader
+var shaderTileDotsHex *ebiten.Shader
 
 func mustCompile(src []byte) *ebiten.Shader {
 	shader, err := ebiten.NewShader(src)
@@ -91,18 +115,6 @@ func ensureShaderHexagonLoaded() {
 	}
 }
 
-func ensureShaderPatternDotsLoaded() {
-	if shaderPatternDots == nil {
-		shaderPatternDots = mustCompile(shaderPatternDotsSrc)
-	}
-}
-
-func ensureShaderOutlineLoaded() {
-	if shaderOutline == nil {
-		shaderOutline = mustCompile(shaderOutlineSrc)
-	}
-}
-
 func ensureShaderExpansionLoaded() {
 	if shaderExpansion == nil {
 		shaderExpansion = mustCompile(shaderExpansionSrc)
@@ -112,5 +124,53 @@ func ensureShaderExpansionLoaded() {
 func ensureShaderErosionLoaded() {
 	if shaderErosion == nil {
 		shaderErosion = mustCompile(shaderErosionSrc)
+	}
+}
+
+func ensureShaderOutlineLoaded() {
+	if shaderOutline == nil {
+		shaderOutline = mustCompile(shaderOutlineSrc)
+	}
+}
+
+func ensureShaderBlurLoaded() {
+	if shaderBlur == nil {
+		shaderBlur = mustCompile(shaderBlurSrc)
+	}
+}
+
+func ensureShaderHorzBlurLoaded() {
+	if shaderHorzBlur == nil {
+		shaderHorzBlur = mustCompile(shaderHorzBlurSrc)
+	}
+}
+
+func ensureShaderVertBlurLoaded() {
+	if shaderVertBlur == nil {
+		shaderVertBlur = mustCompile(shaderVertBlurSrc)
+	}
+}
+
+func ensureShaderGlowLoaded() {
+	if shaderGlow == nil {
+		shaderGlow = mustCompile(shaderGlowSrc)
+	}
+}
+
+func ensureShaderShadowLoaded() {
+	if shaderShadow == nil {
+		shaderShadow = mustCompile(shaderShadowSrc)
+	}
+}
+
+func ensureShaderHardShadowLoaded() {
+	if shaderHardShadow == nil {
+		shaderHardShadow = mustCompile(shaderHardShadowSrc)
+	}
+}
+
+func ensureShaderTileDotsHexLoaded() {
+	if shaderTileDotsHex == nil {
+		shaderTileDotsHex = mustCompile(shaderTileDotsHexSrc)
 	}
 }

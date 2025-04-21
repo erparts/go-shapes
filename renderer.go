@@ -1,6 +1,7 @@
 package shapes
 
 import (
+	"image"
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -12,6 +13,9 @@ type Renderer struct {
 	vertices []ebiten.Vertex
 	indices  []uint16
 	opts     ebiten.DrawTrianglesShaderOptions
+
+	tmp       *ebiten.Image
+	tmpParent *ebiten.Image
 }
 
 func NewRenderer() *Renderer {
@@ -80,5 +84,28 @@ func (r *Renderer) setFlatCustomVAs(cva0, cva1, cva2, cva3 float32) {
 		r.vertices[i].Custom1 = cva1
 		r.vertices[i].Custom2 = cva2
 		r.vertices[i].Custom3 = cva3
+	}
+}
+
+func (r *Renderer) ensureOffscreenSize(w, h int) {
+	const ExtraMargin = 64
+	if r.tmp == nil {
+		r.tmpParent = ebiten.NewImage(w+ExtraMargin, h+ExtraMargin)
+		r.tmp = r.tmpParent.SubImage(image.Rect(0, 0, w, h)).(*ebiten.Image)
+		return
+	}
+
+	bounds := r.tmp.Bounds()
+	if bounds.Dx() == w && bounds.Dy() == h {
+		return
+	}
+
+	bounds = r.tmpParent.Bounds()
+	currWidth, currHeight := bounds.Dx(), bounds.Dy()
+	if currWidth >= w && currHeight >= h {
+		r.tmp = r.tmpParent.SubImage(image.Rect(0, 0, w, h)).(*ebiten.Image)
+	} else {
+		r.tmpParent = ebiten.NewImage(w+ExtraMargin, h+ExtraMargin)
+		r.tmp = r.tmpParent.SubImage(image.Rect(0, 0, w, h)).(*ebiten.Image)
 	}
 }
