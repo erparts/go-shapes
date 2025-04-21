@@ -51,6 +51,9 @@ var shaderShadowSrc []byte
 //go:embed shaders/hard_shadow.kage
 var shaderHardShadowSrc []byte
 
+//go:embed shaders/zoom_shadow.kage
+var shaderZoomShadowSrc []byte
+
 //go:embed shaders/tile_dots_hex.kage
 var shaderTileDotsHexSrc []byte
 
@@ -69,6 +72,7 @@ var shaderVertBlur *ebiten.Shader
 var shaderGlow *ebiten.Shader
 var shaderShadow *ebiten.Shader
 var shaderHardShadow *ebiten.Shader
+var shaderZoomShadow *ebiten.Shader
 var shaderTileDotsHex *ebiten.Shader
 
 func mustCompile(src []byte) *ebiten.Shader {
@@ -166,6 +170,12 @@ func ensureShaderShadowLoaded() {
 func ensureShaderHardShadowLoaded() {
 	if shaderHardShadow == nil {
 		shaderHardShadow = mustCompile(shaderHardShadowSrc)
+	}
+}
+
+func ensureShaderZoomShadowLoaded() {
+	if shaderZoomShadow == nil {
+		shaderZoomShadow = mustCompile(shaderZoomShadowSrc)
 	}
 }
 

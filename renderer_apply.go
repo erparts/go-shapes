@@ -279,6 +279,52 @@ func (r *Renderer) ApplyShadow(target *ebiten.Image, mask *ebiten.Image, ox, oy,
 	r.opts.Images[0] = nil
 }
 
+func (r *Renderer) ApplyZoomShadow(target *ebiten.Image, mask *ebiten.Image, ox, oy, xOffset, yOffset, zoom float32, clamping Clamping) {
+	if zoom < 1.0 || zoom > 16.0 {
+		panic("zoom must be in [1, 16] range")
+	}
+
+	dstBounds, srcBounds := target.Bounds(), mask.Bounds()
+	srcWidth, srcHeight := float32(srcBounds.Dx()), float32(srcBounds.Dy())
+	dstMinX, dstMinY := float32(dstBounds.Min.X), float32(dstBounds.Min.Y)
+	leftOff, topOff := min(0, xOffset), min(0, yOffset)
+	rightOff, bottomOff := max(0, xOffset), max(0, yOffset)
+	var topCut, leftCut, bottomCut, rightCut float32
+	topPad, leftPad := srcHeight*0.5*(zoom-1.0), srcWidth*0.5*(zoom-1.0)
+	bottomPad, rightPad := topPad, leftPad
+	if clamping&ClampBottom != 0 {
+		bottomCut = bottomPad / zoom
+		bottomPad = 0
+	}
+	if clamping&ClampTop != 0 {
+		topCut = topPad / zoom
+		topPad = 0
+	}
+	if clamping&ClampLeft != 0 {
+		leftCut = leftPad / zoom
+		leftPad = 0
+	}
+	if clamping&ClampRight != 0 {
+		rightCut = rightPad / zoom
+		rightPad = 0
+	}
+
+	minX, minY := dstMinX+ox+leftOff-leftPad, dstMinY+oy+topOff-topPad
+	maxX, maxY := dstMinX+srcWidth+ox+rightOff+rightPad, dstMinY+srcHeight+oy+bottomOff+bottomPad
+	r.setDstRectCoords(minX, minY, maxX, maxY)
+
+	srcMinX, srcMinY := float32(srcBounds.Min.X), float32(srcBounds.Min.Y)
+	srcMaxX, srcMaxY := float32(srcBounds.Max.X), float32(srcBounds.Max.Y)
+	r.setSrcRectCoords(srcMinX+leftOff/zoom-leftCut, srcMinY+topOff/zoom-topCut, srcMaxX+rightOff/zoom-rightCut, srcMaxY+bottomOff/zoom-bottomCut)
+	r.setFlatCustomVAs(xOffset/zoom, yOffset/zoom, float32(clamping), zoom)
+
+	// draw shader
+	r.opts.Images[0] = mask
+	ensureShaderZoomShadowLoaded()
+	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderZoomShadow, &r.opts)
+	r.opts.Images[0] = nil
+}
+
 func (r *Renderer) ApplyGlow(target *ebiten.Image, mask *ebiten.Image, radius, threshold, colorMix float32) {
 	panic("unimplemented")
 }

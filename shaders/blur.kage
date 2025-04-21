@@ -34,8 +34,7 @@ func Fragment(targetCoords vec4, sourceCoords vec2, color vec4, customVAs vec4) 
 
 				// approximate gaussian blur
 				// r := halfRadius + Edge
-				// dist2 := dot(offset, offset)
-				// factor := max(0.0, 1.0-dist2/(r*r))
+				// factor := max(0.0, 1.0-(dist*dist)/(r*r))
 				// factor *= factor
 
 				accColor += clr * factor

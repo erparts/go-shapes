@@ -186,3 +186,32 @@ func TestApplyShadow(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestApplyZoomShadow(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		canvas.Fill(color.Black)
+
+		lx, ly := ctx.LeftClickF32()
+		ctx.Renderer.SetColor(color.RGBA{0, 128, 128, 128})
+		ctx.Renderer.ApplyZoomShadow(canvas, ctx.Images[0], lx, ly, 0, 0, 2.0, ClampNone)
+		var opts ebiten.DrawImageOptions
+		opts.GeoM.Translate(float64(lx), float64(ly))
+		canvas.DrawImage(ctx.Images[0], &opts)
+
+		rx, ry := ctx.RightClickF32()
+
+		ctx.Renderer.SetColor(color.RGBA{128, 0, 128, 128})
+		ctx.Renderer.ApplyZoomShadow(canvas, ctx.Images[1], rx, ry, 0, 0, 1.2, ClampBottom)
+
+		opts.GeoM.Reset()
+		opts.GeoM.Translate(float64(rx), float64(ry))
+		canvas.DrawImage(ctx.Images[1], &opts)
+	})
+	circle := app.Renderer.NewCircle(64.0)
+	circBounds := circle.Bounds()
+	halfCircle := circle.SubImage(image.Rect(0, 0, circBounds.Dx(), circBounds.Dy()/2)).(*ebiten.Image)
+	app.Images = append(app.Images, circle, halfCircle)
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
