@@ -1,6 +1,0 @@
-//kage:unit pixels
-package main
-
-func Fragment(targetCoords vec4, sourceCoords vec2, color vec4, customVAs vec4) vec4 {
-	// ...
-}

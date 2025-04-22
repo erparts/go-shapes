@@ -166,22 +166,29 @@ func TestApplyShadow(t *testing.T) {
 
 		lx, ly := ctx.LeftClickF32()
 		ctx.Renderer.SetColor(color.RGBA{0, 128, 128, 128})
-		ctx.Renderer.ApplyShadow(canvas, ctx.Images[0], lx, ly, 0, -16.0, 8.0, ClampBottom)
+		ctx.Renderer.ApplyShadow(canvas, ctx.Images[0], lx, ly, 0, -16.0, 4.0, ClampBottom)
 		var opts ebiten.DrawImageOptions
 		opts.GeoM.Translate(float64(lx), float64(ly))
 		canvas.DrawImage(ctx.Images[0], &opts)
 
 		rx, ry := ctx.RightClickF32()
 		ctx.Renderer.SetColor(color.RGBA{128, 128, 128, 128})
-		ctx.Renderer.ApplyShadow(canvas, ctx.Images[0], rx, ry, -12.0, -12.0, 8.0, ClampBottom)
+		ctx.Renderer.ApplyShadow(canvas, ctx.Images[0], rx, ry, -12.0, -12.0, 9.0, ClampBottom)
 		opts.GeoM.Reset()
 		opts.GeoM.Translate(float64(rx), float64(ry))
 		canvas.DrawImage(ctx.Images[0], &opts)
+
+		mx, my := min(lx, rx), max(ly, ry)
+		ctx.Renderer.SetColor(color.RGBA{0, 196, 196, 196})
+		ctx.Renderer.ApplyShadow(canvas, ctx.Images[1], mx, my, 0, 0, 32.0, ClampNone)
+		opts.GeoM.Reset()
+		opts.GeoM.Translate(float64(mx), float64(my))
+		canvas.DrawImage(ctx.Images[1], &opts)
 	})
 	circle := app.Renderer.NewCircle(64.0)
 	circBounds := circle.Bounds()
 	halfCircle := circle.SubImage(image.Rect(0, 0, circBounds.Dx(), circBounds.Dy()/2)).(*ebiten.Image)
-	app.Images = append(app.Images, halfCircle)
+	app.Images = append(app.Images, halfCircle, circle)
 	if err := ebiten.RunGame(app); err != nil {
 		t.Fatal(err)
 	}
@@ -211,6 +218,35 @@ func TestApplyZoomShadow(t *testing.T) {
 	circBounds := circle.Bounds()
 	halfCircle := circle.SubImage(image.Rect(0, 0, circBounds.Dx(), circBounds.Dy()/2)).(*ebiten.Image)
 	app.Images = append(app.Images, circle, halfCircle)
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestApplyGlow(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		canvas.Fill(color.Black)
+
+		lx, ly := ctx.LeftClickF32()
+		var opts ebiten.DrawImageOptions
+		opts.GeoM.Translate(float64(lx), float64(ly))
+		canvas.DrawImage(ctx.Images[0], &opts)
+		ctx.Renderer.ApplySimpleGlow(canvas, ctx.Images[0], lx, ly, 16)
+
+		rx, ry := ctx.RightClickF32()
+		opts.GeoM.Reset()
+		opts.GeoM.Translate(float64(rx), float64(ry))
+		canvas.DrawImage(ctx.Images[0], &opts)
+		ctx.Renderer.SetColor(color.RGBA{255, 192, 192, 255})
+		dynRadius := float32(ctx.DistAnim(6, 2.0))
+		ctx.Renderer.ApplyGlow(canvas, ctx.Images[0], rx, ry, 24+dynRadius, 18, 0.5, 0.6, 0.0)
+	})
+	const s, m = 96, 16
+	cross := ebiten.NewImage(s, s)
+	app.Renderer.SetColor(color.RGBA{96, 240, 240, 255})
+	app.Renderer.DrawLine(cross, m, m, s-m, s-m, m/2)
+	app.Renderer.DrawLine(cross, s-m, m, m, s-m, m/2)
+	app.Images = append(app.Images, cross)
 	if err := ebiten.RunGame(app); err != nil {
 		t.Fatal(err)
 	}

@@ -36,7 +36,8 @@ func Fragment(targetCoords vec4, sourceCoords vec2, color vec4, customVAs vec4) 
 		}
 	}
 
-	return color * (accColor.a / accWeight)
+	out := color * (accColor.a / accWeight)
+	return out // + (1-out.a)*vec4(0.5, 0, 0.5, 0.5)
 }
 
 func GetSource0ClampCoords(clamping int) (vec2, vec2) {

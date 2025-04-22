@@ -1,6 +1,8 @@
 package shapes
 
 import (
+	"math"
+
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -124,7 +126,7 @@ func (r *Renderer) ApplyBlur2(target *ebiten.Image, mask *ebiten.Image, ox, oy, 
 
 	srcBounds := mask.Bounds()
 	w32, h32 := float32(srcBounds.Dx()), float32(srcBounds.Dy())+radius
-	w, h := int(w32), int(h32)
+	w, h := int(w32), int(math.Ceil(float64(h32)))
 	r.ensureOffscreenSize(w, h)
 	preBlend := r.opts.Blend
 	r.opts.Blend = ebiten.BlendCopy
@@ -325,6 +327,40 @@ func (r *Renderer) ApplyZoomShadow(target *ebiten.Image, mask *ebiten.Image, ox,
 	r.opts.Images[0] = nil
 }
 
-func (r *Renderer) ApplyGlow(target *ebiten.Image, mask *ebiten.Image, radius, threshold, colorMix float32) {
-	panic("unimplemented")
+func (r *Renderer) ApplySimpleGlow(target *ebiten.Image, mask *ebiten.Image, ox, oy, radius float32) {
+	r.ApplyGlow(target, mask, ox, oy, radius, radius, 0.4, 0.7, 1.0)
+}
+
+func (r *Renderer) ApplyGlow(target *ebiten.Image, mask *ebiten.Image, ox, oy, horzRadius, vertRadius, threshStart, threshEnd, colorMix float32) {
+	if horzRadius > 32 || vertRadius > 32 {
+		panic("radius can't exceed 32")
+	}
+
+	srcBounds := mask.Bounds()
+	srcWidth, srcHeight := float32(srcBounds.Dx()), float32(srcBounds.Dy())
+	w32, h32 := float32(srcWidth), float32(srcHeight)+vertRadius
+	w, h := int(w32), int(math.Ceil(float64(h32)))
+	r.ensureOffscreenSize(w, h)
+
+	hr32 := vertRadius / 2.0
+	r.setDstRectCoords(0, 0, w32, h32+2)
+
+	srcMinX, srcMinY := float32(srcBounds.Min.X), float32(srcBounds.Min.Y)
+	srcMaxX, srcMaxY := float32(srcBounds.Max.X), float32(srcBounds.Max.Y)
+	r.setSrcRectCoords(srcMinX, srcMinY-hr32-1, srcMaxX, srcMaxY+hr32+1.0)
+	r.setFlatCustomVAs(vertRadius, threshStart, threshEnd, 1.0)
+
+	// first pass (threshold + vertical blur)
+	r.opts.Images[0] = mask
+	preBlend := r.opts.Blend
+	r.opts.Blend = ebiten.BlendCopy
+	ensureShaderGlowFirstPassLoaded()
+	r.tmp.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderGlowFirstPass, &r.opts)
+	r.opts.Images[0] = nil
+
+	// second pass
+	r.opts.Blend = ebiten.BlendLighter
+	r.ApplyHorzBlur(target, r.tmp, ox, oy-hr32-1.0, horzRadius, colorMix)
+
+	r.opts.Blend = preBlend
 }
