@@ -1,4 +1,4 @@
-module github.com/erparts/shapes
+module github.com/erparts/go-shapes
 
 go 1.24.2
 
