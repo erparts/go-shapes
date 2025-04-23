@@ -133,22 +133,7 @@ func (r *Renderer) ApplyBlur2(target *ebiten.Image, mask *ebiten.Image, ox, oy, 
 	hr32 := radius / 2.0
 	r.ApplyVertBlur(r.tmp, mask, 0, hr32+1.0, radius, 1.0)
 	r.opts.Blend = preBlend
-
-	// horizontal blur is done manually to account for the exact tmp bounds
-	dstBounds := target.Bounds()
-	dstMinX, dstMinY := float32(dstBounds.Min.X), float32(dstBounds.Min.Y)
-	minX, minY := dstMinX+ox-hr32, dstMinY+oy
-	maxX, maxY := dstMinX+ox+w32+hr32, dstMinY+oy+h32
-	r.setDstRectCoords(minX-1, minY, maxX+1, maxY)
-
-	r.setSrcRectCoords(-hr32-1, 0, w32+hr32+1, h32)
-	r.setFlatCustomVAs(radius, colorMix, 0, 0)
-
-	// draw shader
-	r.opts.Images[0] = r.tmp
-	ensureShaderHorzBlurLoaded()
-	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderHorzBlur, &r.opts)
-	r.opts.Images[0] = nil
+	r.ApplyHorzBlur(target, r.tmp, ox, oy-hr32-1.0, radius, colorMix)
 }
 
 func (r *Renderer) ApplyVertBlur(target *ebiten.Image, mask *ebiten.Image, ox, oy, radius, colorMix float32) {
@@ -361,6 +346,5 @@ func (r *Renderer) ApplyGlow(target *ebiten.Image, mask *ebiten.Image, ox, oy, h
 	// second pass
 	r.opts.Blend = ebiten.BlendLighter
 	r.ApplyHorzBlur(target, r.tmp, ox, oy-hr32-1.0, horzRadius, colorMix)
-
 	r.opts.Blend = preBlend
 }

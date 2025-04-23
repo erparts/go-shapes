@@ -110,6 +110,11 @@ func TestApplyBlur2(t *testing.T) {
 		rx, ry := ctx.RightClickF32()
 		ctx.Renderer.SetColor(color.RGBA{255, 0, 0, 255})
 		ctx.Renderer.ApplyBlur2(canvas, ctx.Images[0], rx-radius, ry-radius, fxRadius, 0.0)
+
+		ctx.Renderer.SetColor(color.RGBA{0, 255, 255, 255})
+		ctx.Renderer.SetBlend(ebiten.BlendLighter)
+		ctx.Renderer.ApplyBlur(canvas, ctx.Images[0], rx-radius, ry-radius, fxRadius, 0.0)
+		ctx.Renderer.SetBlend(ebiten.BlendSourceOver)
 	})
 	app.Images = append(app.Images, app.Renderer.NewCircle(float64(radius)))
 	if err := ebiten.RunGame(app); err != nil {
