@@ -312,10 +312,12 @@ func (r *Renderer) ApplyZoomShadow(target *ebiten.Image, mask *ebiten.Image, ox,
 	r.opts.Images[0] = nil
 }
 
+// Effect mix intensity is determined by the renderer's color alphas.
 func (r *Renderer) ApplySimpleGlow(target *ebiten.Image, mask *ebiten.Image, ox, oy, radius float32) {
 	r.ApplyGlow(target, mask, ox, oy, radius, radius, 0.4, 0.7, 1.0)
 }
 
+// Effect mix intensity is determined by the renderer's color alphas.
 func (r *Renderer) ApplyGlow(target *ebiten.Image, mask *ebiten.Image, ox, oy, horzRadius, vertRadius, threshStart, threshEnd, colorMix float32) {
 	if horzRadius > 32 || vertRadius > 32 {
 		panic("radius can't exceed 32")
