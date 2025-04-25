@@ -47,7 +47,7 @@ func (r *Renderer) Gradient(target, mask *ebiten.Image, ox, oy float32, from, to
 	srcWidth, srcHeight := float32(srcBounds.Dx()), float32(srcBounds.Dy())
 	dstMinX, dstMinY := float32(dstBounds.Min.X), float32(dstBounds.Min.Y)
 	minX, minY := dstMinX+ox, dstMinY+oy
-	maxX, maxY := dstMinX+srcWidth+ox, dstMinY+srcHeight+oy
+	maxX, maxY := minX+srcWidth, minY+srcHeight
 	r.setDstRectCoords(minX, minY, maxX, maxY)
 
 	srcMinX, srcMinY := float32(srcBounds.Min.X), float32(srcBounds.Min.Y)
@@ -61,7 +61,7 @@ func (r *Renderer) Gradient(target, mask *ebiten.Image, ox, oy float32, from, to
 	r.setFlatCustomVAs(float32(fromOklab[0]), float32(fromOklab[1]), float32(fromOklab[2]), float32(fromF64[3]))
 
 	clear(r.opts.Uniforms)
-	r.opts.Uniforms["Area"] = [4]float32{dstMinX, dstMinY, srcWidth, srcHeight}
+	r.opts.Uniforms["Area"] = [4]float32{ox, oy, srcWidth, srcHeight}
 	r.opts.Uniforms["DirRadians"] = dirRadians
 	r.opts.Uniforms["NumSteps"] = numSteps
 	r.opts.Uniforms["CurveFactor"] = curveFactor

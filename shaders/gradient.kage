@@ -9,12 +9,14 @@ var UseMask int
 
 func Fragment(targetCoords vec4, sourceCoords vec2, color vec4, customVAs vec4) vec4 {
 	dir := vec2(cos(DirRadians), sin(DirRadians))
-	inAreaCoords := targetCoords.xy - imageDstOrigin() - Area.xy
+	areaOrigin := Area.xy
+	areaSize := Area.zw
+	inAreaCoords := targetCoords.xy - imageDstOrigin() - areaOrigin
 	ptProj := dot(inAreaCoords, dir)
 	tlProj := 0.0
-	trProj := dot(vec2(Area[2], 0), dir)
-	blProj := dot(vec2(0, Area[3]), dir)
-	brProj := dot(Area.zw, dir)
+	trProj := dot(vec2(areaSize.x, 0), dir)
+	blProj := dot(vec2(0, areaSize.y), dir)
+	brProj := dot(areaSize, dir)
 	minProj := min(min(tlProj, trProj), min(blProj, brProj))
 	maxProj := max(max(tlProj, trProj), max(blProj, brProj))
 	progress := (ptProj - minProj) / (maxProj - minProj)
