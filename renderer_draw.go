@@ -89,6 +89,111 @@ func (r *Renderer) DrawEllipse(target *ebiten.Image, ox, oy, horzRadius, vertRad
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderEllipse, &r.opts)
 }
 
+func (r *Renderer) DrawIntRect(target *ebiten.Image, ox, oy, w, h int) {
+	bounds := target.Bounds()
+	minX, minY := bounds.Min.X, bounds.Min.Y
+	r.setDstRectCoords(float32(minX+ox), float32(minY+oy), float32(minX+ox+w), float32(minY+oy+h))
+	ensureShaderDefaultLoaded()
+	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderDefault, &r.opts)
+}
+
+func (r *Renderer) StrokeIntRect(target *ebiten.Image, ox, oy, w, h, outThickness, inThickness int) {
+	if outThickness < 0 || inThickness < 0 {
+		panic("outThickness < 0 || inThickness < 0")
+	}
+
+	if outThickness == 0 {
+		if inThickness != 0 {
+			r.strokeIntInnerRect(target, ox, oy, w, h, inThickness)
+		}
+	} else {
+		r.strokeIntInnerRect(target, ox-outThickness, oy-outThickness, w+outThickness*2, h+outThickness*2, outThickness+inThickness)
+	}
+}
+
+func (r *Renderer) strokeIntInnerRect(target *ebiten.Image, ox, oy, w, h, thickness int) {
+	bounds := target.Bounds()
+	minX, minY := bounds.Min.X, bounds.Min.Y
+	oox, ooy := float32(minX+ox), float32(minY+oy)
+	ofx, ofy := float32(minX+ox+w), float32(minY+oy+h)
+	r.setDstRectCoords(oox, ooy, ofx, ofy)
+
+	// add inner points
+	thickF32 := float32(thickness)
+	iox, ioy := oox+thickF32, ooy+thickF32
+	ifx, ify := ofx-thickF32, ofy-thickF32
+	if r.singleClr {
+		r.vertices = append(r.vertices,
+			ebiten.Vertex{DstX: iox, DstY: ioy},
+			ebiten.Vertex{DstX: ifx, DstY: ioy},
+			ebiten.Vertex{DstX: ifx, DstY: ify},
+			ebiten.Vertex{DstX: iox, DstY: ify},
+		)
+		for i := range 4 {
+			r.vertices[4+i].ColorR = r.vertices[i].ColorR
+			r.vertices[4+i].ColorG = r.vertices[i].ColorG
+			r.vertices[4+i].ColorB = r.vertices[i].ColorB
+			r.vertices[4+i].ColorA = r.vertices[i].ColorA
+		}
+	} else {
+		// we need to interpolate colors. this code takes advantage of
+		// the heavy symmetries in the geometry to reduce the number of
+		// operations, but as a downside, it's a bit tricky to understand
+
+		// compute uv coords for inner points
+		iou := min(max((iox-oox)/(ofx-oox), 0), 1)
+		iov := min(max((ioy-ooy)/(ofy-ooy), 0), 1)
+
+		// compute top and bottom left colors
+		tR, tG, tB, tA := interpVertexColor(r.vertices[0], r.vertices[1], iou)
+		bR, bG, bB, bA := interpVertexColor(r.vertices[3], r.vertices[2], iou)
+
+		// append all vertices with left side colors set
+		r.vertices = append(r.vertices,
+			ebiten.Vertex{DstX: iox, DstY: ioy},
+			ebiten.Vertex{DstX: ifx, DstY: ioy},
+			ebiten.Vertex{DstX: ifx, DstY: ify},
+			ebiten.Vertex{DstX: iox, DstY: ify},
+		)
+
+		tli, tri, bli, bri := 4, 5, 7, 6 // NOTE: use other orders for cool effects
+		r.vertices[tli].ColorR = lerp(tR, bR, iov)
+		r.vertices[tli].ColorG = lerp(tG, bG, iov)
+		r.vertices[tli].ColorB = lerp(tB, bB, iov)
+		r.vertices[tli].ColorA = lerp(tA, bA, iov)
+
+		r.vertices[bli].ColorR = lerp(bR, tR, iov)
+		r.vertices[bli].ColorG = lerp(bG, tG, iov)
+		r.vertices[bli].ColorB = lerp(bB, tB, iov)
+		r.vertices[bli].ColorA = lerp(bA, tA, iov)
+
+		// compute right side colors by symmetry
+		tR = r.vertices[1].ColorR - (tR - r.vertices[0].ColorR)
+		tG = r.vertices[1].ColorG - (tG - r.vertices[0].ColorG)
+		tB = r.vertices[1].ColorB - (tB - r.vertices[0].ColorB)
+		tA = r.vertices[1].ColorA - (tA - r.vertices[0].ColorA)
+		bR = r.vertices[2].ColorR - (bR - r.vertices[3].ColorR)
+		bG = r.vertices[2].ColorG - (bG - r.vertices[3].ColorG)
+		bB = r.vertices[2].ColorB - (bB - r.vertices[3].ColorB)
+		bA = r.vertices[2].ColorA - (bA - r.vertices[3].ColorA)
+
+		// set right vertex colors
+		r.vertices[tri].ColorR = lerp(tR, bR, iov)
+		r.vertices[tri].ColorG = lerp(tG, bG, iov)
+		r.vertices[tri].ColorB = lerp(tB, bB, iov)
+		r.vertices[tri].ColorA = lerp(tA, bA, iov)
+
+		r.vertices[bri].ColorR = lerp(bR, tR, iov)
+		r.vertices[bri].ColorG = lerp(bG, tG, iov)
+		r.vertices[bri].ColorB = lerp(bB, tB, iov)
+		r.vertices[bri].ColorA = lerp(bA, tA, iov)
+	}
+
+	ensureShaderDefaultLoaded()
+	target.DrawTrianglesShader(r.vertices[:], r.strokeIndices[:], shaderDefault, &r.opts)
+	r.vertices = r.vertices[:4]
+}
+
 // DrawTriangle draws a smooth triangle using the given vertices, and an optional rounding factor.
 // Notice that, if provided, handling the rounding is relatively expensive (two dozen f64 products
 // and 3 square roots)

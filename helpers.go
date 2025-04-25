@@ -3,6 +3,8 @@ package shapes
 import (
 	"image/color"
 	"math"
+
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // Notice: geometry code is derived from etxt@v0.0.8 emask/helper_funcs.go
@@ -64,4 +66,25 @@ func f32ToRGBA64(r, g, b, a float32) color.RGBA64 {
 		B: uint16(b * 65535.0),
 		A: uint16(a * 65535.0),
 	}
+}
+
+func lerp[Float float32 | float64](a, b, t Float) Float {
+	return a + t*(b-a)
+}
+
+func interpColor(ox, oy, fx, fy float32, tlClr, trClr, blClr, brClr [4]float32, x, y float32) [4]float32 {
+	u := min(max((x-ox)/(fx-ox), 0), 1)
+	v := min(max((y-oy)/(fy-oy), 0), 1)
+
+	var result [4]float32
+	for i := range 4 {
+		topClr := tlClr[i]*(1-u) + trClr[i]*u
+		bottomClr := blClr[i]*(1-u) + brClr[i]*u
+		result[i] = topClr*(1-v) + bottomClr*v
+	}
+	return result
+}
+
+func interpVertexColor(a, b ebiten.Vertex, t float32) (cr, cg, cb, ca float32) {
+	return lerp(a.ColorR, b.ColorR, t), lerp(a.ColorG, b.ColorG, t), lerp(a.ColorB, b.ColorB, t), lerp(a.ColorA, b.ColorA, t)
 }

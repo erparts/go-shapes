@@ -59,6 +59,36 @@ func TestDrawRect(t *testing.T) {
 	}
 }
 
+func TestIntRect(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		lx, ly := ctx.LeftClick.X, ctx.LeftClick.Y
+		ctx.Renderer.SetColor(color.RGBA{255, 255, 255, 255})
+		ctx.Renderer.DrawIntRect(canvas, lx, ly, 200, 50)
+		ctx.Renderer.SetColor(color.RGBA{0, 255, 0, 255})
+		ctx.Renderer.StrokeIntRect(canvas, lx-1, ly-1, 200+2, 50+2, 1, 0)
+
+		ctx.Renderer.SetColor(color.RGBA{0, 128, 0, 128})
+		ctx.Renderer.StrokeIntRect(canvas, lx, ly, 200, 50, 0, 1)
+
+		rx, ry := ctx.RightClick.X, ctx.RightClick.Y
+		ctx.Renderer.SetColor(color.RGBA{240, 0, 240, 255}, 0, 2)
+		ctx.Renderer.StrokeIntRect(canvas, rx, ry, 100, 50, 4, 4)
+
+		ctx.Renderer.SetColor(color.RGBA{64, 128, 64, 128})
+		ctx.Renderer.DrawIntRect(canvas, rx, ry, 100, 50)
+
+		ctx.Renderer.SetColor(color.RGBA{255, 0, 0, 255}, 0)
+		ctx.Renderer.SetColor(color.RGBA{0, 255, 0, 255}, 1)
+		ctx.Renderer.SetColor(color.RGBA{0, 0, 255, 255}, 2)
+		ctx.Renderer.SetColor(color.RGBA{0, 255, 255, 255}, 3)
+		//ctx.Renderer.DrawIntRect(canvas, lx-8, ry-8, 80+8, 50+8)
+		ctx.Renderer.StrokeIntRect(canvas, lx, ry, 80, 50, 8, 8)
+	})
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestDrawEllipse(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		lx, ly := ctx.LeftClickF32()

@@ -6,6 +6,9 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
+//go:embed shaders/default.kage
+var shaderDefaultSrc []byte
+
 //go:embed shaders/rect.kage
 var shaderRectSrc []byte
 
@@ -60,6 +63,7 @@ var shaderGradientSrc []byte
 //go:embed shaders/tile_dots_hex.kage
 var shaderTileDotsHexSrc []byte
 
+var shaderDefault *ebiten.Shader
 var shaderRect *ebiten.Shader
 var shaderLine *ebiten.Shader
 var shaderCircle *ebiten.Shader
@@ -85,6 +89,12 @@ func mustCompile(src []byte) *ebiten.Shader {
 		panic(err)
 	}
 	return shader
+}
+
+func ensureShaderDefaultLoaded() {
+	if shaderDefault == nil {
+		shaderDefault = mustCompile(shaderDefaultSrc)
+	}
 }
 
 func ensureShaderLineLoaded() {

@@ -14,6 +14,9 @@ type Renderer struct {
 	indices  []uint16
 	opts     ebiten.DrawTrianglesShaderOptions
 
+	singleClr     bool
+	strokeIndices []uint16
+
 	tmp       *ebiten.Image
 	tmpParent *ebiten.Image
 }
@@ -24,6 +27,16 @@ func NewRenderer() *Renderer {
 	renderer.SetColor(color.RGBA{255, 255, 255, 255})
 	renderer.indices = []uint16{0, 1, 2, 0, 2, 3}
 	renderer.opts.Uniforms = make(map[string]any, 8)
+	renderer.strokeIndices = []uint16{
+		0, 1, 4,
+		4, 1, 5,
+		5, 1, 2,
+		5, 2, 6,
+		6, 2, 3,
+		6, 3, 7,
+		7, 3, 0,
+		0, 4, 7,
+	}
 	return &renderer
 }
 
@@ -42,7 +55,10 @@ func (r *Renderer) SetColor(clr color.Color, vertexIndices ...int) {
 
 func (r *Renderer) SetColorF32(red, green, blue, alpha float32, vertexIndices ...int) {
 	if len(vertexIndices) == 0 {
+		r.singleClr = true
 		vertexIndices = []int{0, 1, 2, 3}
+	} else {
+		r.singleClr = false
 	}
 	for _, i := range vertexIndices {
 		r.vertices[i].ColorR = red

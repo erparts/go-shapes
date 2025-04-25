@@ -1,0 +1,6 @@
+//kage:unit pixels
+package main
+
+func Fragment(_ vec4, _ vec2, color vec4) vec4 {
+	return color
+}
