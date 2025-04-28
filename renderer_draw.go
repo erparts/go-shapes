@@ -80,7 +80,6 @@ func (r *Renderer) DrawEllipse(target *ebiten.Image, ox, oy, horzRadius, vertRad
 		rc, rs := math.Cos(rads), math.Sin(rads)
 		halfWidth := float32(math.Hypot(hRadiusF64*rc, vRadiusF64*rs))
 		halfHeight := float32(math.Hypot(hRadiusF64*rs, vRadiusF64*rc))
-		r.DrawRect(target, ox-halfWidth, oy-halfHeight, halfWidth, halfHeight, 0)
 		r.setDstRectCoords(ox-halfWidth, oy-halfHeight, ox+halfWidth, oy+halfHeight)
 		r.opts.Uniforms["Radians"] = rads
 	}
