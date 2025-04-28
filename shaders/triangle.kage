@@ -5,10 +5,21 @@ var P0 vec2
 var P1 vec2
 var P2 vec2
 var Rounding float
+var Thickness float
 
 func Fragment(targetCoords vec4, _ vec2, color vec4) vec4 {
+	const AAMargin = 1.333
+
 	dist := distanceToTriangle(targetCoords.xy-imageDstOrigin(), P0, P1, P2)
-	alpha := 1.0 - smoothstep(-1.333, 0, dist-Rounding)
+	var alpha float
+	if Thickness > 0 {
+		hthick := Thickness / 2.0
+		inAlpha := smoothstep(-hthick, -hthick+AAMargin, dist)
+		outAlpha := 1.0 - smoothstep(hthick-AAMargin, hthick, dist)
+		alpha = inAlpha * outAlpha
+	} else {
+		alpha = 1.0 - smoothstep(-1.333, 0, dist-Rounding)
+	}
 	alpha = pow(alpha, 1.0/2.2)
 	return color * alpha
 }

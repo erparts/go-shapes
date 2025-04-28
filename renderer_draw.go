@@ -197,6 +197,14 @@ func (r *Renderer) strokeIntInnerRect(target *ebiten.Image, ox, oy, w, h, thickn
 // Notice that, if provided, handling the rounding is relatively expensive (two dozen f64 products
 // and 3 square roots)
 func (r *Renderer) DrawTriangle(target *ebiten.Image, ox1, oy1, ox2, oy2, ox3, oy3, rounding float64) {
+	r.drawTriangle(target, ox1, oy1, ox2, oy2, ox3, oy3, 0.0, rounding)
+}
+
+func (r *Renderer) StrokeTriangle(target *ebiten.Image, ox1, oy1, ox2, oy2, ox3, oy3, thickness, rounding float64) {
+	r.drawTriangle(target, ox1, oy1, ox2, oy2, ox3, oy3, thickness, rounding)
+}
+
+func (r *Renderer) drawTriangle(target *ebiten.Image, ox1, oy1, ox2, oy2, ox3, oy3, thickness, rounding float64) {
 	area := math.Abs((ox1*(oy2-oy3) + ox2*(oy3-oy1) + ox3*(oy1-oy2)) / 2)
 	if area < 1e-6 {
 		return // empty triangle
@@ -222,7 +230,8 @@ func (r *Renderer) DrawTriangle(target *ebiten.Image, ox1, oy1, ox2, oy2, ox3, o
 
 	minX, maxX := min(ox1, ox2, ox3), max(ox1, ox2, ox3)
 	minY, maxY := min(oy1, oy2, oy3), max(oy1, oy2, oy3)
-	r.setDstRectCoords(float32(minX), float32(minY), float32(maxX), float32(maxY))
+	hthick := thickness / 2.0
+	r.setDstRectCoords(float32(minX-hthick), float32(minY-hthick), float32(maxX+hthick), float32(maxY+hthick))
 
 	// draw shader
 	ensureShaderTriangleLoaded()
@@ -230,6 +239,7 @@ func (r *Renderer) DrawTriangle(target *ebiten.Image, ox1, oy1, ox2, oy2, ox3, o
 	r.opts.Uniforms["P1"] = []float32{float32(iox2), float32(ioy2)}
 	r.opts.Uniforms["P2"] = []float32{float32(iox3), float32(ioy3)}
 	r.opts.Uniforms["Rounding"] = float32(rounding)
+	r.opts.Uniforms["Thickness"] = float32(thickness)
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderTriangle, &r.opts)
 }
 
