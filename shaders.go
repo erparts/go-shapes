@@ -60,6 +60,9 @@ var shaderZoomShadowSrc []byte
 //go:embed shaders/gradient.kage
 var shaderGradientSrc []byte
 
+//go:embed shaders/tile_dots_grid.kage
+var shaderTileDotsGridSrc []byte
+
 //go:embed shaders/tile_dots_hex.kage
 var shaderTileDotsHexSrc []byte
 
@@ -81,6 +84,7 @@ var shaderShadow *ebiten.Shader
 var shaderHardShadow *ebiten.Shader
 var shaderZoomShadow *ebiten.Shader
 var shaderGradient *ebiten.Shader
+var shaderTileDotsGrid *ebiten.Shader
 var shaderTileDotsHex *ebiten.Shader
 
 func mustCompile(src []byte) *ebiten.Shader {
@@ -196,6 +200,12 @@ func ensureShaderZoomShadowLoaded() {
 func ensureShaderGradientLoaded() {
 	if shaderGradient == nil {
 		shaderGradient = mustCompile(shaderGradientSrc)
+	}
+}
+
+func ensureShaderTileDotsGridLoaded() {
+	if shaderTileDotsGrid == nil {
+		shaderTileDotsGrid = mustCompile(shaderTileDotsGridSrc)
 	}
 }
 

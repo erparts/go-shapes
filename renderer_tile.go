@@ -17,3 +17,15 @@ func (r *Renderer) TileDotsHex(target *ebiten.Image, radius, horzSpacing, xOffse
 	ensureShaderTileDotsHexLoaded()
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderTileDotsHex, &r.opts)
 }
+
+func (r *Renderer) TileDotsGrid(target *ebiten.Image, radius, spacing, xOffset, yOffset float32) {
+	bounds := target.Bounds()
+	minX, minY := float32(bounds.Min.X), float32(bounds.Min.Y)
+	maxX, maxY := float32(bounds.Max.X), float32(bounds.Max.Y)
+	r.setDstRectCoords(minX, minY, maxX, maxY)
+	r.setFlatCustomVAs(radius, spacing, xOffset, yOffset)
+
+	// draw shader
+	ensureShaderTileDotsGridLoaded()
+	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderTileDotsGrid, &r.opts)
+}
