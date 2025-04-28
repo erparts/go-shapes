@@ -200,6 +200,11 @@ func (r *Renderer) DrawTriangle(target *ebiten.Image, ox1, oy1, ox2, oy2, ox3, o
 	r.drawTriangle(target, ox1, oy1, ox2, oy2, ox3, oy3, 0.0, rounding)
 }
 
+// StrokeTriangle draws an unfilled triangle. The outline will expand [-thickness/2, +thickness/2] around
+// the given points, unless the passed thickness is negative, in which case the outline will be interior
+// only, going from [-thickness, 0].
+//
+// For more details on rounding, see [Renderer.DrawTriangle]().
 func (r *Renderer) StrokeTriangle(target *ebiten.Image, ox1, oy1, ox2, oy2, ox3, oy3, thickness, rounding float64) {
 	r.drawTriangle(target, ox1, oy1, ox2, oy2, ox3, oy3, thickness, rounding)
 }
@@ -230,7 +235,7 @@ func (r *Renderer) drawTriangle(target *ebiten.Image, ox1, oy1, ox2, oy2, ox3, o
 
 	minX, maxX := min(ox1, ox2, ox3), max(ox1, ox2, ox3)
 	minY, maxY := min(oy1, oy2, oy3), max(oy1, oy2, oy3)
-	hthick := thickness / 2.0
+	hthick := max(thickness/2.0, 0)
 	r.setDstRectCoords(float32(minX-hthick), float32(minY-hthick), float32(maxX+hthick), float32(maxY+hthick))
 
 	// draw shader

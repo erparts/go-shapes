@@ -29,6 +29,9 @@ func TestDrawShapes(t *testing.T) {
 		ctx.Renderer.DrawTriangle(canvas, x, y, x+70, y-20, x+114, y+80, 8)
 		x, y = float64(200), float64(300)
 		ctx.Renderer.StrokeTriangle(canvas, x+70, y-20, x, y, x+114, y+80, 4, 8)
+		v := uint8(32 + ctx.DistAnim(196-32, 1.0))
+		ctx.Renderer.SetColor(color.RGBA{v, 0, 0, v})
+		ctx.Renderer.StrokeTriangle(canvas, x+70, y-20, x, y, x+114, y+80, -4, 0)
 
 		rads := ctx.RadsAnim(1.0)
 		ctx.Renderer.DrawHexagon(canvas, 80, 400, 60, 0, float32(rads))
