@@ -350,3 +350,26 @@ func (r *Renderer) ApplyGlow(target *ebiten.Image, mask *ebiten.Image, ox, oy, h
 	r.ApplyHorzBlur(target, r.tmp, ox, oy-hr32-1.0, horzRadius, colorMix)
 	r.opts.Blend = preBlend
 }
+
+// Effect mix intensity is determined by the renderer's color alphas.
+func (r *Renderer) ApplyHorzGlow(target *ebiten.Image, mask *ebiten.Image, ox, oy, horzRadius, threshStart, threshEnd, colorMix float32) {
+	if horzRadius > 32 {
+		panic("radius can't exceed 32")
+	}
+
+	srcBounds := mask.Bounds()
+	srcWidth, srcHeight := float32(srcBounds.Dx()), float32(srcBounds.Dy())
+
+	hr32 := horzRadius / 2.0
+	r.setDstRectCoords(ox-hr32-1.0, oy, ox+float32(srcWidth)+hr32+1.0, oy+float32(srcHeight))
+
+	srcMinX, srcMinY := float32(srcBounds.Min.X), float32(srcBounds.Min.Y)
+	srcMaxX, srcMaxY := float32(srcBounds.Max.X), float32(srcBounds.Max.Y)
+	r.setSrcRectCoords(srcMinX-hr32-1, srcMinY, srcMaxX+hr32+1, srcMaxY)
+	r.setFlatCustomVAs(horzRadius, threshStart, threshEnd, 1.0)
+
+	r.opts.Images[0] = mask
+	ensureShaderHorzGlowLoaded()
+	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderHorzGlow, &r.opts)
+	r.opts.Images[0] = nil
+}

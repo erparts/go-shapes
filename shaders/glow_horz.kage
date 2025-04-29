@@ -1,10 +1,6 @@
 //kage:unit pixels
 package main
 
-// First pass of a glow effect, which takes the pixel values over a given lightness threshold
-// and blurs them vertically. A second pass is required to complete the horizontal blur and
-// the additive compositing.
-
 func Fragment(targetCoords vec4, sourceCoords vec2, color vec4, customVAs vec4) vec4 {
 	const MaxRadius = 32.0
 	const Edge = 1.333
@@ -21,13 +17,13 @@ func Fragment(targetCoords vec4, sourceCoords vec2, color vec4, customVAs vec4) 
 	accColor := vec4(0.0)
 	accWeight := 0.0
 
-	for y := -SafetyMargin; y < MaxRadius; y += 1.0 {
-		if y > radius+SafetyMargin {
+	for x := -SafetyMargin; x < MaxRadius; x += 1.0 {
+		if x > radius+SafetyMargin {
 			break
 		}
-		sample := floor(vec2(srcCoords.x, srcCoords.y-halfRadius+y)) + vec2(0.5)
+		sample := floor(vec2(srcCoords.x-halfRadius+x, srcCoords.y)) + vec2(0.5)
 		clr := imageSrc0At(sample)
-		dist := abs(srcCoords.y - sample.y)
+		dist := abs(srcCoords.x - sample.x)
 		if dist <= halfRadius+Edge {
 			luminance := dot(clr.rgb, vec3(0.299, 0.587, 0.114))
 			lumFactor := smoothstep(loThreshold, hiThreshold, luminance)

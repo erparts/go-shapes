@@ -256,3 +256,32 @@ func TestApplyGlow(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestApplyHorzGlow(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		canvas.Fill(color.Black)
+
+		lx, ly := ctx.LeftClickF32()
+		var opts ebiten.DrawImageOptions
+		opts.GeoM.Translate(float64(lx), float64(ly))
+		canvas.DrawImage(ctx.Images[0], &opts)
+		ctx.Renderer.ApplyHorzGlow(canvas, ctx.Images[0], lx, ly, 16, 0.4, 0.5, 1.0)
+
+		rx, ry := ctx.RightClickF32()
+		opts.GeoM.Reset()
+		opts.GeoM.Translate(float64(rx), float64(ry))
+		canvas.DrawImage(ctx.Images[0], &opts)
+		ctx.Renderer.SetColor(color.RGBA{255, 192, 192, 255})
+		dynRadius := float32(ctx.DistAnim(6, 2.0))
+		ctx.Renderer.ApplyHorzGlow(canvas, ctx.Images[0], rx, ry, 24+dynRadius, 0.5, 0.6, 0.0)
+	})
+	const s, m = 96, 16
+	cross := ebiten.NewImage(s, s)
+	app.Renderer.SetColor(color.RGBA{96, 240, 240, 255})
+	app.Renderer.DrawLine(cross, m, m, s-m, s-m, m/2)
+	app.Renderer.DrawLine(cross, s-m, m, m, s-m, m/2)
+	app.Images = append(app.Images, cross)
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
