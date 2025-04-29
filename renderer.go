@@ -49,7 +49,7 @@ func (r *Renderer) GetColorF32() [4]float32 {
 // vertex 1 as top-right, vertex 2 as bottom-right, vertex 3 as bottom-left, but this is shader
 // dependent (or even variable in some cases).
 func (r *Renderer) SetColor(clr color.Color, vertexIndices ...int) {
-	clrF32 := colorToF32(clr)
+	clrF32 := ColorToF32(clr)
 	r.SetColorF32(clrF32[0], clrF32[1], clrF32[2], clrF32[3], vertexIndices...)
 }
 
@@ -65,6 +65,15 @@ func (r *Renderer) SetColorF32(red, green, blue, alpha float32, vertexIndices ..
 		r.vertices[i].ColorG = green
 		r.vertices[i].ColorB = blue
 		r.vertices[i].ColorA = alpha
+	}
+}
+
+func (r *Renderer) ScaleAlphaBy(alphaFactor float32) {
+	for i := range r.vertices {
+		r.vertices[i].ColorR *= alphaFactor
+		r.vertices[i].ColorG *= alphaFactor
+		r.vertices[i].ColorB *= alphaFactor
+		r.vertices[i].ColorA *= alphaFactor
 	}
 }
 
