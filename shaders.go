@@ -51,6 +51,9 @@ var shaderGlowFirstPassSrc []byte
 //go:embed shaders/glow_horz.kage
 var shaderHorzGlowSrc []byte
 
+//go:embed shaders/glow_horz_dark.kage
+var shaderDarkHorzGlowSrc []byte
+
 //go:embed shaders/shadow.kage
 var shaderShadowSrc []byte
 
@@ -84,6 +87,7 @@ var shaderHorzBlur *ebiten.Shader
 var shaderVertBlur *ebiten.Shader
 var shaderGlowFirstPass *ebiten.Shader
 var shaderHorzGlow *ebiten.Shader
+var shaderDarkHorzGlow *ebiten.Shader
 var shaderShadow *ebiten.Shader
 var shaderHardShadow *ebiten.Shader
 var shaderZoomShadow *ebiten.Shader
@@ -186,6 +190,12 @@ func ensureShaderGlowFirstPassLoaded() {
 func ensureShaderHorzGlowLoaded() {
 	if shaderHorzGlow == nil {
 		shaderHorzGlow = mustCompile(shaderHorzGlowSrc)
+	}
+}
+
+func ensureShaderDarkHorzGlowLoaded() {
+	if shaderDarkHorzGlow == nil {
+		shaderDarkHorzGlow = mustCompile(shaderDarkHorzGlowSrc)
 	}
 }
 

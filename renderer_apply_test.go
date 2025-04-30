@@ -3,6 +3,7 @@ package shapes
 import (
 	"image"
 	"image/color"
+	"math"
 	"testing"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -281,6 +282,40 @@ func TestApplyHorzGlow(t *testing.T) {
 	app.Renderer.DrawLine(cross, m, m, s-m, s-m, m/2)
 	app.Renderer.DrawLine(cross, s-m, m, m, s-m, m/2)
 	app.Images = append(app.Images, cross)
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestApplyDarkHorzGlow(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		canvas.Fill(color.White)
+
+		lx, ly := ctx.LeftClickF32()
+		var opts ebiten.DrawImageOptions
+		opts.GeoM.Translate(float64(lx), float64(ly))
+		canvas.DrawImage(ctx.Images[0], &opts)
+		ctx.Renderer.ApplyDarkHorzGlow(canvas, ctx.Images[0], lx, ly, 16, 0.5, 0.01, 1.0)
+		opts.GeoM.Translate(0, float64(120))
+		canvas.DrawImage(ctx.Images[0], &opts)
+
+		rx, ry := ctx.RightClickF32()
+		opts.GeoM.Reset()
+		opts.GeoM.Translate(float64(rx), float64(ry))
+		canvas.DrawImage(ctx.Images[1], &opts)
+		dynRadius := float32(ctx.DistAnim(6, 2.0))
+		ctx.Renderer.SetColor(color.RGBA{64, 0, 0, 255})
+		ctx.Renderer.ApplyDarkHorzGlow(canvas, ctx.Images[1], rx, ry, 24+dynRadius, 1, 0.5, 0.0)
+	})
+	const s, m = 96, 16
+	cross := ebiten.NewImage(s, s)
+	app.Renderer.SetColor(color.RGBA{0, 0, 128, 255})
+	app.Renderer.DrawLine(cross, m, m, s-m, s-m, m/2)
+	app.Renderer.DrawLine(cross, s-m, m, m, s-m, m/2)
+	img := ebiten.NewImage(s, s)
+	app.Renderer.SetColor(color.RGBA{0, 0, 0, 255})
+	app.Renderer.SimpleGradient(img, color.RGBA{255, 255, 255, 255}, color.RGBA{128, 0, 0, 255}, math.Pi/2)
+	app.Images = append(app.Images, img, cross)
 	if err := ebiten.RunGame(app); err != nil {
 		t.Fatal(err)
 	}

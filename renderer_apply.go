@@ -312,13 +312,30 @@ func (r *Renderer) ApplyZoomShadow(target *ebiten.Image, mask *ebiten.Image, ox,
 	r.opts.Images[0] = nil
 }
 
-// Effect mix intensity is determined by the renderer's color alphas.
+// ApplySimpleGlow draws the given mask into the target, at the given coordinates, with
+// an glow effect added. The effect mix intensity is determined by the renderer's color
+// alphas. For finer control, see also [Renderer.ApplyGlow]().
 func (r *Renderer) ApplySimpleGlow(target *ebiten.Image, mask *ebiten.Image, ox, oy, radius float32) {
 	r.ApplyGlow(target, mask, ox, oy, radius, radius, 0.4, 0.7, 1.0)
 }
 
-// Effect mix intensity is determined by the renderer's color alphas.
+// ApplyGlow draws a horizontal glow effect for the given mask into the target, at the
+// given coordinates. The effect mix intensity is determined by the renderer's color alphas.
+//
+// Regarding the advanced control parameters:
+//   - threshStart and threshEnd indicate the start luminosity threshold at which the glow
+//     effect kicks in and the point at which it's fully active. threshStart must be <=
+//     threshEnd, and the values must be in [0, 1] range.
+//   - colorMix controls the glow's color. If 0, the glow color will be determined fully
+//     by the renderer's vertex colors. If 1, the glow color will be determined by the original
+//     mask colors. Any values in between will lead to linear interpolation.
+//
+// Notice that this effect uses an internal offscreen and two passes, which means it will
+// always break batching.
 func (r *Renderer) ApplyGlow(target *ebiten.Image, mask *ebiten.Image, ox, oy, horzRadius, vertRadius, threshStart, threshEnd, colorMix float32) {
+	if threshStart > threshEnd {
+		panic("threshStart > threshEnd")
+	}
 	if horzRadius > 32 || vertRadius > 32 {
 		panic("radius can't exceed 32")
 	}
@@ -351,8 +368,14 @@ func (r *Renderer) ApplyGlow(target *ebiten.Image, mask *ebiten.Image, ox, oy, h
 	r.opts.Blend = preBlend
 }
 
-// Effect mix intensity is determined by the renderer's color alphas.
+// ApplyHorzGlow draws a horizontal glow effect for the given mask into the target, at the
+// given coordinates. See [Renderer.ApplyGlow]() for additional documentation. Comparedto
+// Renderer.ApplyGlow, this effect only applies the glow horizontally and it's much cheaper,
+// requiring no offscreen and a single pass.
 func (r *Renderer) ApplyHorzGlow(target *ebiten.Image, mask *ebiten.Image, ox, oy, horzRadius, threshStart, threshEnd, colorMix float32) {
+	if threshStart > threshEnd {
+		panic("threshStart > threshEnd")
+	}
 	if horzRadius > 32 {
 		panic("radius can't exceed 32")
 	}
@@ -366,10 +389,47 @@ func (r *Renderer) ApplyHorzGlow(target *ebiten.Image, mask *ebiten.Image, ox, o
 	srcMinX, srcMinY := float32(srcBounds.Min.X), float32(srcBounds.Min.Y)
 	srcMaxX, srcMaxY := float32(srcBounds.Max.X), float32(srcBounds.Max.Y)
 	r.setSrcRectCoords(srcMinX-hr32-1, srcMinY, srcMaxX+hr32+1, srcMaxY)
-	r.setFlatCustomVAs(horzRadius, threshStart, threshEnd, 1.0)
+	r.setFlatCustomVAs(horzRadius, threshStart, threshEnd, colorMix)
 
 	r.opts.Images[0] = mask
 	ensureShaderHorzGlowLoaded()
+	preBlend := r.opts.Blend
+	r.opts.Blend = ebiten.BlendLighter
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderHorzGlow, &r.opts)
+	r.opts.Blend = preBlend
+	r.opts.Images[0] = nil
+}
+
+// ApplyDarkHorzGlow is the "negative" version of [Renderer.ApplyHorzGlow](). Instead of
+// using an additive blending effect around high luminosity areas, it uses multiplicative
+// blending around dark areas.
+//
+// Notice that unlike regular glow effects, dark glows expects threshStart >= threshEnd.
+func (r *Renderer) ApplyDarkHorzGlow(target *ebiten.Image, mask *ebiten.Image, ox, oy, horzRadius, threshStart, threshEnd, colorMix float32) {
+	if threshStart < threshEnd {
+		panic("threshStart < threshEnd")
+	}
+	if horzRadius > 32 {
+		panic("radius can't exceed 32")
+	}
+
+	srcBounds := mask.Bounds()
+	srcWidth, srcHeight := float32(srcBounds.Dx()), float32(srcBounds.Dy())
+
+	hr32 := horzRadius / 2.0
+	r.setDstRectCoords(ox-hr32-1.0, oy, ox+float32(srcWidth)+hr32+1.0, oy+float32(srcHeight))
+
+	srcMinX, srcMinY := float32(srcBounds.Min.X), float32(srcBounds.Min.Y)
+	srcMaxX, srcMaxY := float32(srcBounds.Max.X), float32(srcBounds.Max.Y)
+	r.setSrcRectCoords(srcMinX-hr32-1, srcMinY, srcMaxX+hr32+1, srcMaxY)
+	r.setFlatCustomVAs(horzRadius, threshStart, threshEnd, colorMix)
+
+	r.opts.Images[0] = mask
+	ensureShaderDarkHorzGlowLoaded()
+	preBlend := r.opts.Blend
+	r.opts.Blend = blendMultiply
+	//r.opts.Blend = blendSubtract // also possible with a shader flag, but multiply feels more natural
+	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderDarkHorzGlow, &r.opts)
+	r.opts.Blend = preBlend
 	r.opts.Images[0] = nil
 }
