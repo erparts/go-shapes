@@ -97,7 +97,7 @@ var (
 		BlendFactorDestinationRGB:   ebiten.BlendFactorOne,
 		BlendFactorDestinationAlpha: ebiten.BlendFactorOne,
 		BlendOperationRGB:           ebiten.BlendOperationReverseSubtract,
-		BlendOperationAlpha:         ebiten.BlendOperationAdd,
+		BlendOperationAlpha:         ebiten.BlendOperationReverseSubtract,
 	}
 	BlendMultiply = ebiten.Blend{
 		BlendFactorSourceRGB:        ebiten.BlendFactorDestinationColor,

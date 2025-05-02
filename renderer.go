@@ -81,6 +81,24 @@ func (r *Renderer) SetBlend(blend ebiten.Blend) {
 	r.opts.Blend = blend
 }
 
+func (r *Renderer) Options() *ebiten.DrawTrianglesShaderOptions {
+	return &r.opts
+}
+
+func (r *Renderer) DrawShaderAt(target, source *ebiten.Image, ox, oy, horzMargin, vertMargin float32, shader *ebiten.Shader) {
+	srcBounds := source.Bounds()
+	srcWidth, srcHeight := srcBounds.Dx(), srcBounds.Dy()
+	srcWidthF32, srcHeightF32 := float32(srcWidth), float32(srcHeight)
+	dstBounds := target.Bounds()
+	minX := float32(dstBounds.Min.X) + ox - horzMargin
+	minY := float32(dstBounds.Min.Y) + oy - vertMargin
+	r.setDstRectCoords(minX, minY, minX+srcWidthF32+horzMargin*2, minY+srcHeightF32+vertMargin*2)
+	minX = float32(srcBounds.Min.X) - horzMargin
+	minY = float32(srcBounds.Min.Y) - vertMargin
+	r.setSrcRectCoords(minX, minY, minX+srcWidthF32+horzMargin*2, minY+srcHeightF32+vertMargin*2)
+	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shader, &r.opts)
+}
+
 func (r *Renderer) setDstRectCoords(minX, minY, maxX, maxY float32) {
 	r.vertices[0].DstX = minX
 	r.vertices[0].DstY = minY
