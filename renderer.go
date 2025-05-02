@@ -100,6 +100,15 @@ func (r *Renderer) DrawShaderAt(target, source *ebiten.Image, ox, oy, horzMargin
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shader, &r.opts)
 }
 
+func (r *Renderer) DrawRectShader(target *ebiten.Image, ox, oy, w, h, horzMargin, vertMargin float32, shader *ebiten.Shader) {
+	dstBounds := target.Bounds()
+	minX := float32(dstBounds.Min.X) + ox - horzMargin
+	minY := float32(dstBounds.Min.Y) + oy - vertMargin
+	r.setDstRectCoords(minX, minY, minX+w+horzMargin*2, minY+h+vertMargin*2)
+	r.setSrcRectCoords(-horzMargin, -vertMargin, w+horzMargin*2, h+vertMargin*2)
+	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shader, &r.opts)
+}
+
 func (r *Renderer) setDstRectCoords(minX, minY, maxX, maxY float32) {
 	r.vertices[0].DstX = minX
 	r.vertices[0].DstY = minY
