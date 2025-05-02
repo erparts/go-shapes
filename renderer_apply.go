@@ -427,7 +427,7 @@ func (r *Renderer) ApplyDarkHorzGlow(target *ebiten.Image, mask *ebiten.Image, o
 	r.opts.Images[0] = mask
 	ensureShaderDarkHorzGlowLoaded()
 	preBlend := r.opts.Blend
-	r.opts.Blend = blendMultiply
+	r.opts.Blend = BlendMultiply
 	//r.opts.Blend = blendSubtract // also possible with a shader flag, but multiply feels more natural
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderDarkHorzGlow, &r.opts)
 	r.opts.Blend = preBlend

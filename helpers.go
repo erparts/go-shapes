@@ -89,19 +89,22 @@ func interpVertexColor(a, b ebiten.Vertex, t float32) (cr, cg, cb, ca float32) {
 	return lerp(a.ColorR, b.ColorR, t), lerp(a.ColorG, b.ColorG, t), lerp(a.ColorB, b.ColorB, t), lerp(a.ColorA, b.ColorA, t)
 }
 
-var blendSubtract = ebiten.Blend{
-	BlendFactorSourceRGB:        ebiten.BlendFactorOne,
-	BlendFactorSourceAlpha:      ebiten.BlendFactorOne,
-	BlendFactorDestinationRGB:   ebiten.BlendFactorOne,
-	BlendFactorDestinationAlpha: ebiten.BlendFactorOne,
-	BlendOperationRGB:           ebiten.BlendOperationReverseSubtract,
-	BlendOperationAlpha:         ebiten.BlendOperationAdd,
-}
-var blendMultiply = ebiten.Blend{
-	BlendFactorSourceRGB:        ebiten.BlendFactorDestinationColor,
-	BlendFactorSourceAlpha:      ebiten.BlendFactorDestinationColor,
-	BlendFactorDestinationRGB:   ebiten.BlendFactorOneMinusSourceAlpha, //ebiten.BlendFactorZero,
-	BlendFactorDestinationAlpha: ebiten.BlendFactorOneMinusSourceAlpha, //ebiten.BlendFactorZero,
-	BlendOperationRGB:           ebiten.BlendOperationAdd,
-	BlendOperationAlpha:         ebiten.BlendOperationAdd,
-}
+// Common blend modes not directly exposed on Ebitengine.
+var (
+	BlendSubtract = ebiten.Blend{
+		BlendFactorSourceRGB:        ebiten.BlendFactorOne,
+		BlendFactorSourceAlpha:      ebiten.BlendFactorOne,
+		BlendFactorDestinationRGB:   ebiten.BlendFactorOne,
+		BlendFactorDestinationAlpha: ebiten.BlendFactorOne,
+		BlendOperationRGB:           ebiten.BlendOperationReverseSubtract,
+		BlendOperationAlpha:         ebiten.BlendOperationAdd,
+	}
+	BlendMultiply = ebiten.Blend{
+		BlendFactorSourceRGB:        ebiten.BlendFactorDestinationColor,
+		BlendFactorSourceAlpha:      ebiten.BlendFactorDestinationColor,
+		BlendFactorDestinationRGB:   ebiten.BlendFactorOneMinusSourceAlpha,
+		BlendFactorDestinationAlpha: ebiten.BlendFactorOneMinusSourceAlpha,
+		BlendOperationRGB:           ebiten.BlendOperationAdd,
+		BlendOperationAlpha:         ebiten.BlendOperationAdd,
+	}
+)
