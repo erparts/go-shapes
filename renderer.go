@@ -96,6 +96,7 @@ func (r *Renderer) DrawShaderAt(target, source *ebiten.Image, ox, oy, horzMargin
 	minX = float32(srcBounds.Min.X) - horzMargin
 	minY = float32(srcBounds.Min.Y) - vertMargin
 	r.setSrcRectCoords(minX, minY, minX+srcWidthF32+horzMargin*2, minY+srcHeightF32+vertMargin*2)
+	r.opts.Images[0] = source
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shader, &r.opts)
 }
 
