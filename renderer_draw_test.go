@@ -113,3 +113,25 @@ func TestDrawEllipse(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestDrawRing(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		lx, ly := ctx.LeftClickF32()
+		rx, ry := ctx.RightClickF32()
+
+		ctx.Renderer.SetColorF32(1.0, 1.0, 1.0, 1.0)
+		ctx.Renderer.DrawCircle(canvas, lx, ly, 64.0)
+		ctx.Renderer.DrawCircle(canvas, rx, ry, 48.0)
+
+		ctx.Renderer.SetColorF32(1.0, 0.0, 1.0, 1.0, 0, 1)
+		ctx.Renderer.SetColorF32(0.5, 1.0, 0.5, 1.0, 2, 3)
+		ctx.Renderer.DrawRing(canvas, lx, ly, 65.0, 67.0)
+		ctx.Renderer.DrawRing(canvas, rx, ry, 48.0-4, 48+0)
+
+		ctx.Renderer.SetColorF32(0.5, 0.5, 0.5, 0.5)
+		ctx.Renderer.DrawCircle(canvas, rx, ry, 48.0)
+	})
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}

@@ -20,6 +20,13 @@ func (r *Renderer) NewCircle(radius float64) *ebiten.Image {
 	return img
 }
 
+func (r *Renderer) NewRing(inRadius, outRadius float64) *ebiten.Image {
+	side := float32(math.Ceil(outRadius * 2))
+	img := ebiten.NewImage(int(side), int(side))
+	r.DrawRing(img, side/2, side/2, float32(inRadius), float32(outRadius))
+	return img
+}
+
 func (r *Renderer) DrawRect(target *ebiten.Image, ox, oy, w, h, rounding float32) {
 	r.setDstRectCoords(ox, oy, ox+w, oy+h)
 	ensureShaderRectLoaded()
@@ -62,28 +69,35 @@ func (r *Renderer) DrawLine(target *ebiten.Image, ox, oy, fx, fy float64, thickn
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderLine, &r.opts)
 }
 
-func (r *Renderer) DrawCircle(target *ebiten.Image, ox, oy, radius float32) {
-	r.setDstRectCoords(ox-radius, oy-radius, ox+radius, oy+radius)
+func (r *Renderer) DrawCircle(target *ebiten.Image, cx, cy, radius float32) {
+	r.setDstRectCoords(cx-radius, cy-radius, cx+radius, cy+radius)
 	ensureShaderCircleLoaded()
-	r.setFlatCustomVAs(ox, oy, radius, 0.0)
+	r.setFlatCustomVAs(cx, cy, radius, 0.0)
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderCircle, &r.opts)
+}
+
+func (r *Renderer) DrawRing(target *ebiten.Image, cx, cy, inRadius, outRadius float32) {
+	r.setDstRectCoords(cx-outRadius, cy-outRadius, cx+outRadius, cy+outRadius)
+	ensureShaderRingLoaded()
+	r.setFlatCustomVAs(cx, cy, outRadius, inRadius)
+	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderRing, &r.opts)
 }
 
 // Notice: ellipses don't have a perfect SDF, so approximations can be very slightly
 // bigger or smaller than the requested radiuses.
-func (r *Renderer) DrawEllipse(target *ebiten.Image, ox, oy, horzRadius, vertRadius float32, rads float64) {
+func (r *Renderer) DrawEllipse(target *ebiten.Image, cx, cy, horzRadius, vertRadius float32, rads float64) {
 	if rads == 0 {
-		r.setDstRectCoords(ox-horzRadius, oy-vertRadius, ox+horzRadius, oy+vertRadius)
+		r.setDstRectCoords(cx-horzRadius, cy-vertRadius, cx+horzRadius, cy+vertRadius)
 		r.opts.Uniforms["Radians"] = 0
 	} else {
 		hRadiusF64, vRadiusF64 := float64(horzRadius), float64(vertRadius)
 		rc, rs := math.Cos(rads), math.Sin(rads)
 		halfWidth := float32(math.Hypot(hRadiusF64*rc, vRadiusF64*rs))
 		halfHeight := float32(math.Hypot(hRadiusF64*rs, vRadiusF64*rc))
-		r.setDstRectCoords(ox-halfWidth, oy-halfHeight, ox+halfWidth, oy+halfHeight)
+		r.setDstRectCoords(cx-halfWidth, cy-halfHeight, cx+halfWidth, cy+halfHeight)
 		r.opts.Uniforms["Radians"] = rads
 	}
-	r.setFlatCustomVAs(ox, oy, horzRadius, vertRadius)
+	r.setFlatCustomVAs(cx, cy, horzRadius, vertRadius)
 	ensureShaderEllipseLoaded()
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderEllipse, &r.opts)
 }
@@ -193,9 +207,9 @@ func (r *Renderer) strokeIntInnerRect(target *ebiten.Image, ox, oy, w, h, thickn
 	r.vertices = r.vertices[:4]
 }
 
-// DrawTriangle draws a smooth triangle using the given vertices, and an optional rounding factor.
+// DrawTriangle draws a smooth triangle using the given vertices and an optional rounding factor.
 // Notice that, if provided, handling the rounding is relatively expensive (two dozen f64 products
-// and 3 square roots)
+// and 3 square roots).
 func (r *Renderer) DrawTriangle(target *ebiten.Image, ox1, oy1, ox2, oy2, ox3, oy3, rounding float64) {
 	r.drawTriangle(target, ox1, oy1, ox2, oy2, ox3, oy3, 0.0, rounding)
 }

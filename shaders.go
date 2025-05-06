@@ -18,6 +18,9 @@ var shaderLineSrc []byte
 //go:embed shaders/circle.kage
 var shaderCircleSrc []byte
 
+//go:embed shaders/ring.kage
+var shaderRingSrc []byte
+
 //go:embed shaders/ellipse.kage
 var shaderEllipseSrc []byte
 
@@ -76,6 +79,7 @@ var shaderDefault *ebiten.Shader
 var shaderRect *ebiten.Shader
 var shaderLine *ebiten.Shader
 var shaderCircle *ebiten.Shader
+var shaderRing *ebiten.Shader
 var shaderEllipse *ebiten.Shader
 var shaderTriangle *ebiten.Shader
 var shaderHexagon *ebiten.Shader
@@ -109,6 +113,12 @@ func ensureShaderDefaultLoaded() {
 	}
 }
 
+func ensureShaderRectLoaded() {
+	if shaderRect == nil {
+		shaderRect = mustCompile(shaderRectSrc)
+	}
+}
+
 func ensureShaderLineLoaded() {
 	if shaderLine == nil {
 		shaderLine = mustCompile(shaderLineSrc)
@@ -121,9 +131,9 @@ func ensureShaderCircleLoaded() {
 	}
 }
 
-func ensureShaderRectLoaded() {
-	if shaderRect == nil {
-		shaderRect = mustCompile(shaderRectSrc)
+func ensureShaderRingLoaded() {
+	if shaderRing == nil {
+		shaderRing = mustCompile(shaderRingSrc)
 	}
 }
 
