@@ -472,9 +472,8 @@ var gaussKerns = [][9]float32{
 // that downscales the source x4 before applying a gaussian kernel. This blur
 // implementation tends to be more efficient than ApplyBlur2 when it comes to less
 // powerful hardware and large blur areas (it uses less memory and compute at the
-// cost of more steps). When enough resources are available, ApplyBlur2 tends to be
-// slightly more efficient than ApplyBlurD4 when it comes to medium-sized or small
-// blurs.
+// cost of more steps). When enough resources are available (e.g. most medium-sized
+// or small blurs), ApplyBlur2 tends to be slightly more efficient than ApplyBlurD4.
 func (r *Renderer) ApplyBlurD4(target *ebiten.Image, mask *ebiten.Image, ox, oy float32, kernel GaussKern, colorMix float32) {
 	const downscaling = 4
 	maskBounds := mask.Bounds()
