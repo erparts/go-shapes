@@ -143,6 +143,35 @@ func TestApplyDirBlur(t *testing.T) {
 	}
 }
 
+func TestApplyBlurKern(t *testing.T) {
+	//ebiten.SetVsyncEnabled(false)
+	radius := float32(64.0)
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		canvas.Fill(color.Black)
+
+		lx, ly := ctx.LeftClickF32()
+		ctx.Renderer.SetColor(color.RGBA{255, 0, 255, 255})
+		if ebiten.IsKeyPressed(ebiten.KeySpace) {
+			ctx.Renderer.ApplyBlur2(canvas, ctx.Images[0], lx-radius, ly-radius, 32.0, 1.0)
+		} else {
+			ctx.Renderer.ApplyBlurD4(canvas, ctx.Images[0], lx-radius, ly-radius, GaussKern15, 1.0)
+		}
+		ctx.Renderer.SetColor(color.RGBA{128, 0, 128, 128})
+		ctx.Renderer.DrawCircle(canvas, lx, ly, radius)
+
+		rx, ry := ctx.RightClickF32()
+		if ebiten.IsKeyPressed(ebiten.KeySpace) {
+			ctx.Renderer.ApplyBlur2(canvas, ctx.Images[0], rx-radius, ry-radius, 32.0, 1.0)
+		} else {
+			ctx.Renderer.ApplyBlurD4(canvas, ctx.Images[0], rx-radius, ry-radius, GaussKern15, 1.0)
+		}
+	})
+	app.Images = append(app.Images, app.Renderer.NewCircle(float64(radius)))
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestApplyHardShadow(t *testing.T) {
 	radius := float32(64.0)
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {

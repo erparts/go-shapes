@@ -1,8 +1,8 @@
 package shapes
 
 import (
-	"image"
 	"image/color"
+	"slices"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -17,8 +17,7 @@ type Renderer struct {
 	singleClr     bool
 	strokeIndices []uint16
 
-	tmp       *ebiten.Image
-	tmpParent *ebiten.Image
+	temps []offscreen
 }
 
 func NewRenderer() *Renderer {
@@ -109,6 +108,30 @@ func (r *Renderer) DrawRectShader(target *ebiten.Image, ox, oy, w, h, horzMargin
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shader, &r.opts)
 }
 
+// Upscale draws the source into the given target with a sharper upscaling than Ebitengine's linear filtering.
+func (r *Renderer) Upscale(target, source *ebiten.Image, ox, oy, scale float32, scaledSampling bool) {
+	srcBounds := source.Bounds()
+	srcWidth, srcHeight := srcBounds.Dx(), srcBounds.Dy()
+	srcWidthF32, srcHeightF32 := float32(srcWidth), float32(srcHeight)
+
+	dstBounds := target.Bounds()
+	minX := float32(dstBounds.Min.X) + ox
+	minY := float32(dstBounds.Min.Y) + oy
+	r.setDstRectCoords(minX, minY, minX+srcWidthF32*scale, minY+srcHeightF32*scale)
+
+	minX, minY = float32(srcBounds.Min.X), float32(srcBounds.Min.Y)
+	r.setSrcRectCoords(minX, minY, minX+srcWidthF32, minY+srcHeightF32)
+	r.opts.Images[0] = source
+
+	ensureShaderBilinearLoaded()
+	if scaledSampling {
+		r.setFlatCustomVAs(1.0/scale, 1.0/scale, 0, 0)
+	} else {
+		r.setFlatCustomVAs(1.0, 1.0, 0, 0)
+	}
+	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderBilinear, &r.opts)
+}
+
 func (r *Renderer) setDstRectCoords(minX, minY, maxX, maxY float32) {
 	r.vertices[0].DstX = minX
 	r.vertices[0].DstY = minY
@@ -140,25 +163,25 @@ func (r *Renderer) setFlatCustomVAs(cva0, cva1, cva2, cva3 float32) {
 	}
 }
 
-func (r *Renderer) ensureOffscreenSize(w, h int) {
-	const ExtraMargin = 64
-	if r.tmp == nil {
-		r.tmpParent = ebiten.NewImage(w+ExtraMargin, h+ExtraMargin)
-		r.tmp = r.tmpParent.SubImage(image.Rect(0, 0, w, h)).(*ebiten.Image)
-		return
+func (r *Renderer) setFlatCustomVA0(cva0 float32) {
+	for i := range len(r.vertices) {
+		r.vertices[i].Custom0 = cva0
 	}
+}
 
-	bounds := r.tmp.Bounds()
-	if bounds.Dx() == w && bounds.Dy() == h {
-		return
+func (r *Renderer) setFlatCustomVAs01(cva0, cva1 float32) {
+	for i := range len(r.vertices) {
+		r.vertices[i].Custom0 = cva0
+		r.vertices[i].Custom1 = cva1
 	}
+}
 
-	bounds = r.tmpParent.Bounds()
-	currWidth, currHeight := bounds.Dx(), bounds.Dy()
-	if currWidth >= w && currHeight >= h {
-		r.tmp = r.tmpParent.SubImage(image.Rect(0, 0, w, h)).(*ebiten.Image)
-	} else {
-		r.tmpParent = ebiten.NewImage(w+ExtraMargin, h+ExtraMargin)
-		r.tmp = r.tmpParent.SubImage(image.Rect(0, 0, w, h)).(*ebiten.Image)
+func (r *Renderer) getTemp(offscreenIndex int, w, h int) *ebiten.Image {
+	if offscreenIndex >= len(r.temps) {
+		growth := offscreenIndex + 1 - len(r.temps)
+		r.temps = slices.Grow(r.temps, growth)
+		r.temps = r.temps[:offscreenIndex+1]
+		r.temps[offscreenIndex] = newOffscreen(0, 0, 64)
 	}
+	return r.temps[offscreenIndex].WithSize(w, h)
 }

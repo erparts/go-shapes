@@ -9,6 +9,9 @@ import (
 //go:embed shaders/default.kage
 var shaderDefaultSrc []byte
 
+//go:embed shaders/bilinear.kage
+var shaderBilinearSrc []byte
+
 //go:embed shaders/rect.kage
 var shaderRectSrc []byte
 
@@ -48,6 +51,12 @@ var shaderHorzBlurSrc []byte
 //go:embed shaders/vert_blur.kage
 var shaderVertBlurSrc []byte
 
+//go:embed shaders/horz_blur_kern.kage
+var shaderHorzBlurKernSrc []byte
+
+//go:embed shaders/vert_blur_kern.kage
+var shaderVertBlurKernSrc []byte
+
 //go:embed shaders/glow_first_pass.kage
 var shaderGlowFirstPassSrc []byte
 
@@ -76,6 +85,7 @@ var shaderTileDotsGridSrc []byte
 var shaderTileDotsHexSrc []byte
 
 var shaderDefault *ebiten.Shader
+var shaderBilinear *ebiten.Shader
 var shaderRect *ebiten.Shader
 var shaderLine *ebiten.Shader
 var shaderCircle *ebiten.Shader
@@ -89,6 +99,8 @@ var shaderOutline *ebiten.Shader
 var shaderBlur *ebiten.Shader
 var shaderHorzBlur *ebiten.Shader
 var shaderVertBlur *ebiten.Shader
+var shaderHorzBlurKern *ebiten.Shader
+var shaderVertBlurKern *ebiten.Shader
 var shaderGlowFirstPass *ebiten.Shader
 var shaderHorzGlow *ebiten.Shader
 var shaderDarkHorzGlow *ebiten.Shader
@@ -110,6 +122,12 @@ func mustCompile(src []byte) *ebiten.Shader {
 func ensureShaderDefaultLoaded() {
 	if shaderDefault == nil {
 		shaderDefault = mustCompile(shaderDefaultSrc)
+	}
+}
+
+func ensureShaderBilinearLoaded() {
+	if shaderBilinear == nil {
+		shaderBilinear = mustCompile(shaderBilinearSrc)
 	}
 }
 
@@ -188,6 +206,18 @@ func ensureShaderHorzBlurLoaded() {
 func ensureShaderVertBlurLoaded() {
 	if shaderVertBlur == nil {
 		shaderVertBlur = mustCompile(shaderVertBlurSrc)
+	}
+}
+
+func ensureShaderHorzBlurKernLoaded() {
+	if shaderHorzBlurKern == nil {
+		shaderHorzBlurKern = mustCompile(shaderHorzBlurKernSrc)
+	}
+}
+
+func ensureShaderVertBlurKernLoaded() {
+	if shaderVertBlurKern == nil {
+		shaderVertBlurKern = mustCompile(shaderVertBlurKernSrc)
 	}
 }
 

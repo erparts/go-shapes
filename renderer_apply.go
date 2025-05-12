@@ -24,7 +24,7 @@ func (r *Renderer) ApplyExpansion(target *ebiten.Image, mask *ebiten.Image, ox, 
 	srcMinX, srcMinY := float32(srcBounds.Min.X), float32(srcBounds.Min.Y)
 	srcMaxX, srcMaxY := float32(srcBounds.Max.X), float32(srcBounds.Max.Y)
 	r.setSrcRectCoords(srcMinX-ht32-1, srcMinY-ht32-1, srcMaxX+ht32+1, srcMaxY+ht32+1)
-	r.setFlatCustomVAs(thickness, 0, 0, 0)
+	r.setFlatCustomVA0(thickness)
 
 	// draw shader
 	r.opts.Images[0] = mask
@@ -50,7 +50,7 @@ func (r *Renderer) ApplyErosion(target *ebiten.Image, mask *ebiten.Image, ox, oy
 	srcMinX, srcMinY := float32(srcBounds.Min.X), float32(srcBounds.Min.Y)
 	srcMaxX, srcMaxY := float32(srcBounds.Max.X), float32(srcBounds.Max.Y)
 	r.setSrcRectCoords(srcMinX-1, srcMinY-1, srcMaxX+1.0, srcMaxY+1.0)
-	r.setFlatCustomVAs(thickness, 0, 0, 0)
+	r.setFlatCustomVA0(thickness)
 
 	// draw shader
 	r.opts.Images[0] = mask
@@ -77,7 +77,7 @@ func (r *Renderer) ApplyOutline(target *ebiten.Image, mask *ebiten.Image, ox, oy
 	srcMinX, srcMinY := float32(srcBounds.Min.X), float32(srcBounds.Min.Y)
 	srcMaxX, srcMaxY := float32(srcBounds.Max.X), float32(srcBounds.Max.Y)
 	r.setSrcRectCoords(srcMinX-ht32-1, srcMinY-ht32-1, srcMaxX+ht32+1.0, srcMaxY+ht32+1.0)
-	r.setFlatCustomVAs(thickness, 0, 0, 0)
+	r.setFlatCustomVA0(thickness)
 
 	// draw shader
 	r.opts.Images[0] = mask
@@ -107,7 +107,7 @@ func (r *Renderer) ApplyBlur(target *ebiten.Image, mask *ebiten.Image, ox, oy, r
 	srcMinX, srcMinY := float32(srcBounds.Min.X), float32(srcBounds.Min.Y)
 	srcMaxX, srcMaxY := float32(srcBounds.Max.X), float32(srcBounds.Max.Y)
 	r.setSrcRectCoords(srcMinX-hr32-1, srcMinY-hr32-1, srcMaxX+hr32+1.0, srcMaxY+hr32+1.0)
-	r.setFlatCustomVAs(radius, colorMix, 0, 0)
+	r.setFlatCustomVAs01(radius, colorMix)
 
 	// draw shader
 	r.opts.Images[0] = mask
@@ -127,13 +127,13 @@ func (r *Renderer) ApplyBlur2(target *ebiten.Image, mask *ebiten.Image, ox, oy, 
 	srcBounds := mask.Bounds()
 	w32, h32 := float32(srcBounds.Dx()), float32(srcBounds.Dy())+radius
 	w, h := int(w32), int(math.Ceil(float64(h32)))
-	r.ensureOffscreenSize(w, h)
+	tmp := r.getTemp(0, w, h)
 	preBlend := r.opts.Blend
 	r.opts.Blend = ebiten.BlendCopy
 	hr32 := radius / 2.0
-	r.ApplyVertBlur(r.tmp, mask, 0, hr32+1.0, radius, 1.0)
+	r.ApplyVertBlur(tmp, mask, 0, hr32+1.0, radius, 1.0)
 	r.opts.Blend = preBlend
-	r.ApplyHorzBlur(target, r.tmp, ox, oy-hr32-1.0, radius, colorMix)
+	r.ApplyHorzBlur(target, tmp, ox, oy-hr32-1.0, radius, colorMix)
 }
 
 func (r *Renderer) ApplyVertBlur(target *ebiten.Image, mask *ebiten.Image, ox, oy, radius, colorMix float32) {
@@ -153,7 +153,7 @@ func (r *Renderer) ApplyVertBlur(target *ebiten.Image, mask *ebiten.Image, ox, o
 	srcMinX, srcMinY := float32(srcBounds.Min.X), float32(srcBounds.Min.Y)
 	srcMaxX, srcMaxY := float32(srcBounds.Max.X), float32(srcBounds.Max.Y)
 	r.setSrcRectCoords(srcMinX, srcMinY-hr32-1, srcMaxX, srcMaxY+hr32+1.0)
-	r.setFlatCustomVAs(radius, colorMix, 0, 0)
+	r.setFlatCustomVAs01(radius, colorMix)
 
 	// draw shader
 	r.opts.Images[0] = mask
@@ -179,7 +179,7 @@ func (r *Renderer) ApplyHorzBlur(target *ebiten.Image, mask *ebiten.Image, ox, o
 	srcMinX, srcMinY := float32(srcBounds.Min.X), float32(srcBounds.Min.Y)
 	srcMaxX, srcMaxY := float32(srcBounds.Max.X), float32(srcBounds.Max.Y)
 	r.setSrcRectCoords(srcMinX-hr32-1, srcMinY, srcMaxX+hr32+1.0, srcMaxY)
-	r.setFlatCustomVAs(radius, colorMix, 0, 0)
+	r.setFlatCustomVAs01(radius, colorMix)
 
 	// draw shader
 	r.opts.Images[0] = mask
@@ -344,7 +344,7 @@ func (r *Renderer) ApplyGlow(target *ebiten.Image, mask *ebiten.Image, ox, oy, h
 	srcWidth, srcHeight := float32(srcBounds.Dx()), float32(srcBounds.Dy())
 	w32, h32 := float32(srcWidth), float32(srcHeight)+vertRadius
 	w, h := int(w32), int(math.Ceil(float64(h32)))
-	r.ensureOffscreenSize(w, h)
+	tmp := r.getTemp(0, w, h)
 
 	hr32 := vertRadius / 2.0
 	r.setDstRectCoords(0, 0, w32, h32+2)
@@ -359,12 +359,12 @@ func (r *Renderer) ApplyGlow(target *ebiten.Image, mask *ebiten.Image, ox, oy, h
 	preBlend := r.opts.Blend
 	r.opts.Blend = ebiten.BlendCopy
 	ensureShaderGlowFirstPassLoaded()
-	r.tmp.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderGlowFirstPass, &r.opts)
+	tmp.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderGlowFirstPass, &r.opts)
 	r.opts.Images[0] = nil
 
 	// second pass
 	r.opts.Blend = ebiten.BlendLighter
-	r.ApplyHorzBlur(target, r.tmp, ox, oy-hr32-1.0, horzRadius, colorMix)
+	r.ApplyHorzBlur(target, tmp, ox, oy-hr32-1.0, horzRadius, colorMix)
 	r.opts.Blend = preBlend
 }
 
@@ -432,4 +432,87 @@ func (r *Renderer) ApplyDarkHorzGlow(target *ebiten.Image, mask *ebiten.Image, o
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderDarkHorzGlow, &r.opts)
 	r.opts.Blend = preBlend
 	r.opts.Images[0] = nil
+}
+
+type GaussKern uint8
+
+const (
+	GaussKern3 GaussKern = iota
+	GaussKern5
+	GaussKern7
+	GaussKern9
+	GaussKern11
+	GaussKern13
+	GaussKern15
+	GaussKern17
+)
+
+func (k GaussKern) Radius() int {
+	ik := int(k)
+	return 1 + ik + ik
+}
+
+func (k GaussKern) Size() int {
+	ik := int(k)
+	return 3 + ik + ik
+}
+
+var gaussKerns = [][9]float32{
+	{0.5000, 0.2500, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000},
+	{0.3750, 0.2500, 0.0625, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000},
+	{0.3990, 0.2420, 0.0540, 0.0040, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000},
+	{0.2220, 0.1460, 0.0370, 0.0050, 0.0002, 0.0000, 0.0000, 0.0000, 0.0000},
+	{0.2005, 0.1644, 0.1038, 0.0506, 0.0176, 0.0045, 0.0000, 0.0000, 0.0000},
+	{0.1995, 0.1690, 0.1172, 0.0650, 0.0285, 0.0093, 0.0024, 0.0000, 0.0000},
+	{0.1966, 0.1712, 0.1268, 0.0803, 0.0434, 0.0192, 0.0064, 0.0017, 0.0000},
+	{0.1920, 0.1716, 0.1346, 0.0937, 0.0571, 0.0291, 0.0126, 0.0044, 0.0013},
+}
+
+func (r *Renderer) ApplyBlurD4(target *ebiten.Image, mask *ebiten.Image, ox, oy float32, kernel GaussKern, colorMix float32) {
+	const downscaling = 4
+	maskBounds := mask.Bounds()
+	maskWidth, maskHeight := maskBounds.Dx(), maskBounds.Dy()
+	maskW64, maskH64 := float64(maskWidth), float64(maskHeight)
+	downW64, downH64 := maskW64/downscaling, maskH64/downscaling
+	downImgWidth, downImgHeight := math.Ceil(downW64)+2, math.Ceil(downH64)+2
+	down := r.getTemp(0, int(downImgWidth), int(downImgHeight))
+	down.Clear()
+
+	var opts ebiten.DrawImageOptions
+	opts.Filter = ebiten.FilterLinear
+	opts.GeoM.Scale(1.0/downscaling, 1.0/downscaling)
+	opts.GeoM.Translate(1, 1)
+	opts.Blend = ebiten.BlendCopy
+	down.DrawImage(mask, &opts)
+
+	// apply kern horz blur
+	halfMargin := float64(kernel.Radius())
+	margin := halfMargin * 2.0
+	dblurW64, dblurH64 := downW64+margin, downH64+margin
+	dblurImgWidth, dblurImgHeight := math.Ceil(dblurW64)+2, math.Ceil(dblurH64)+2
+	dblurHorz := r.getTemp(1, int(dblurImgWidth), int(downImgHeight))
+
+	r.setDstRectCoords(0, 0, float32(dblurW64)+2, float32(downH64)+2)
+	r.setSrcRectCoords(float32(-halfMargin), float32(0), float32(downW64+halfMargin)+2, float32(downH64)+2)
+	preBlend := r.opts.Blend
+	r.opts.Blend = ebiten.BlendCopy
+	r.setFlatCustomVA0(colorMix)
+	r.opts.Images[0] = down
+	r.opts.Uniforms["KernelLen"] = kernel.Size()
+	r.opts.Uniforms["Kernel"] = gaussKerns[kernel]
+	ensureShaderHorzBlurKernLoaded()
+	dblurHorz.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderHorzBlurKern, &r.opts)
+
+	// apply kern vert blur
+	dblur := r.getTemp(0, int(dblurImgWidth), int(dblurImgHeight))
+	r.setDstRectCoords(0, 0, float32(dblurW64)+2, float32(dblurH64)+2)
+	r.setSrcRectCoords(0, float32(-halfMargin), float32(dblurW64)+2, float32(downH64+halfMargin)+2)
+	r.opts.Images[0] = dblurHorz
+	ensureShaderVertBlurKernLoaded()
+	dblur.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderVertBlurKern, &r.opts)
+
+	// upscale
+	fx, fy := ox+float32(-downscaling-halfMargin*downscaling), oy+float32(-downscaling-halfMargin*downscaling)
+	r.Upscale(target, dblur, fx, fy, downscaling, false)
+	r.opts.Blend = preBlend
 }
