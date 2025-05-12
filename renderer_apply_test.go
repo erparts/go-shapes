@@ -144,8 +144,7 @@ func TestApplyDirBlur(t *testing.T) {
 }
 
 func TestApplyBlurKern(t *testing.T) {
-	//ebiten.SetVsyncEnabled(false)
-	radius := float32(64.0)
+	radius := float32(128.0)
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		canvas.Fill(color.Black)
 
@@ -154,7 +153,7 @@ func TestApplyBlurKern(t *testing.T) {
 		if ebiten.IsKeyPressed(ebiten.KeySpace) {
 			ctx.Renderer.ApplyBlur2(canvas, ctx.Images[0], lx-radius, ly-radius, 32.0, 1.0)
 		} else {
-			ctx.Renderer.ApplyBlurD4(canvas, ctx.Images[0], lx-radius, ly-radius, GaussKern15, 1.0)
+			ctx.Renderer.ApplyBlurD4(canvas, ctx.Images[0], lx-radius, ly-radius, GaussKern17, 1.0)
 		}
 		ctx.Renderer.SetColor(color.RGBA{128, 0, 128, 128})
 		ctx.Renderer.DrawCircle(canvas, lx, ly, radius)
@@ -163,7 +162,7 @@ func TestApplyBlurKern(t *testing.T) {
 		if ebiten.IsKeyPressed(ebiten.KeySpace) {
 			ctx.Renderer.ApplyBlur2(canvas, ctx.Images[0], rx-radius, ry-radius, 32.0, 1.0)
 		} else {
-			ctx.Renderer.ApplyBlurD4(canvas, ctx.Images[0], rx-radius, ry-radius, GaussKern15, 1.0)
+			ctx.Renderer.ApplyBlurD4(canvas, ctx.Images[0], rx-radius, ry-radius, GaussKern17, 1.0)
 		}
 	})
 	app.Images = append(app.Images, app.Renderer.NewCircle(float64(radius)))

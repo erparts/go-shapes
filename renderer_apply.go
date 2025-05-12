@@ -468,6 +468,13 @@ var gaussKerns = [][9]float32{
 	{0.1920, 0.1716, 0.1346, 0.0937, 0.0571, 0.0291, 0.0126, 0.0044, 0.0013},
 }
 
+// ApplyBlurD4 is a less flexible form of blur, similar to [Renderer.ApplyBlur2](),
+// that downscales the source x4 before applying a gaussian kernel. This blur
+// implementation tends to be more efficient than ApplyBlur2 when it comes to less
+// powerful hardware and large blur areas (it uses less memory and compute at the
+// cost of more steps). When enough resources are available, ApplyBlur2 tends to be
+// slightly more efficient than ApplyBlurD4 when it comes to medium-sized or small
+// blurs.
 func (r *Renderer) ApplyBlurD4(target *ebiten.Image, mask *ebiten.Image, ox, oy float32, kernel GaussKern, colorMix float32) {
 	const downscaling = 4
 	maskBounds := mask.Bounds()
@@ -512,7 +519,7 @@ func (r *Renderer) ApplyBlurD4(target *ebiten.Image, mask *ebiten.Image, ox, oy 
 	dblur.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderVertBlurKern, &r.opts)
 
 	// upscale
+	r.opts.Blend = preBlend
 	fx, fy := ox+float32(-downscaling-halfMargin*downscaling), oy+float32(-downscaling-halfMargin*downscaling)
 	r.Upscale(target, dblur, fx, fy, downscaling, false)
-	r.opts.Blend = preBlend
 }
