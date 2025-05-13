@@ -474,7 +474,7 @@ var gaussKerns = [][9]float32{
 // powerful hardware and large blur areas (it uses less memory and compute at the
 // cost of more steps). When enough resources are available (e.g. most medium-sized
 // or small blurs), ApplyBlur2 tends to be slightly more efficient than ApplyBlurD4.
-func (r *Renderer) ApplyBlurD4(target *ebiten.Image, mask *ebiten.Image, ox, oy float32, kernel GaussKern, colorMix float32) {
+func (r *Renderer) ApplyBlurD4(target *ebiten.Image, mask *ebiten.Image, ox, oy float32, horzKernel, vertKernel GaussKern, colorMix float32) {
 	const downscaling = 4
 	maskBounds := mask.Bounds()
 	maskWidth, maskHeight := maskBounds.Dx(), maskBounds.Dy()
@@ -492,33 +492,37 @@ func (r *Renderer) ApplyBlurD4(target *ebiten.Image, mask *ebiten.Image, ox, oy 
 	down.DrawImage(mask, &opts)
 
 	// apply kern horz blur
-	halfMargin := float64(kernel.Radius())
-	margin := halfMargin * 2.0
-	dblurW64, dblurH64 := downW64+margin, downH64+margin
+	halfHorzMargin, halfVertMargin := float64(horzKernel.Radius()), float64(vertKernel.Radius())
+	horzMargin, vertMargin := halfHorzMargin*2.0, halfVertMargin*2.0
+	dblurW64, dblurH64 := downW64+horzMargin, downH64+vertMargin
 	dblurImgWidth, dblurImgHeight := math.Ceil(dblurW64)+2, math.Ceil(dblurH64)+2
 	dblurHorz := r.getTemp(1, int(dblurImgWidth), int(downImgHeight))
 
 	r.setDstRectCoords(0, 0, float32(dblurW64)+2, float32(downH64)+2)
-	r.setSrcRectCoords(float32(-halfMargin), float32(0), float32(downW64+halfMargin)+2, float32(downH64)+2)
+	r.setSrcRectCoords(float32(-halfHorzMargin), float32(0), float32(downW64+halfHorzMargin)+2, float32(downH64)+2)
 	preBlend := r.opts.Blend
 	r.opts.Blend = ebiten.BlendCopy
 	r.setFlatCustomVA0(colorMix)
 	r.opts.Images[0] = down
-	r.opts.Uniforms["KernelLen"] = kernel.Size()
-	r.opts.Uniforms["Kernel"] = gaussKerns[kernel]
+	r.opts.Uniforms["KernelLen"] = horzKernel.Size()
+	r.opts.Uniforms["Kernel"] = gaussKerns[horzKernel]
 	ensureShaderHorzBlurKernLoaded()
 	dblurHorz.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderHorzBlurKern, &r.opts)
 
 	// apply kern vert blur
+	if vertKernel != horzKernel {
+		r.opts.Uniforms["KernelLen"] = vertKernel.Size()
+		r.opts.Uniforms["Kernel"] = gaussKerns[vertKernel]
+	}
 	dblur := r.getTemp(0, int(dblurImgWidth), int(dblurImgHeight))
 	r.setDstRectCoords(0, 0, float32(dblurW64)+2, float32(dblurH64)+2)
-	r.setSrcRectCoords(0, float32(-halfMargin), float32(dblurW64)+2, float32(downH64+halfMargin)+2)
+	r.setSrcRectCoords(0, float32(-halfVertMargin), float32(dblurW64)+2, float32(downH64+halfVertMargin)+2)
 	r.opts.Images[0] = dblurHorz
 	ensureShaderVertBlurKernLoaded()
 	dblur.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderVertBlurKern, &r.opts)
 
 	// upscale
 	r.opts.Blend = preBlend
-	fx, fy := ox+float32(-downscaling-halfMargin*downscaling), oy+float32(-downscaling-halfMargin*downscaling)
+	fx, fy := ox+float32(-downscaling-halfHorzMargin*downscaling), oy+float32(-downscaling-halfVertMargin*downscaling)
 	r.Upscale(target, dblur, fx, fy, downscaling, false)
 }
