@@ -52,6 +52,12 @@ func (ctx *TestAppCtx) DistAnim(maxDist, speedFactor float64) float64 {
 	return maxDist * (math.Sin(float64(ctx.Ticks)*0.02*speedFactor) + 1.0) / 2.0
 }
 
+func (ctx *TestAppCtx) DrawAtF32(target, image *ebiten.Image, ox, oy float32) {
+	var opts ebiten.DrawImageOptions
+	opts.GeoM.Translate(float64(ox), float64(oy))
+	target.DrawImage(image, &opts)
+}
+
 type TestApp struct {
 	BaseTestApp
 	TestAppCtx

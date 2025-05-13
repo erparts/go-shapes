@@ -97,6 +97,7 @@ func (r *Renderer) DrawShaderAt(target, source *ebiten.Image, ox, oy, horzMargin
 	r.setSrcRectCoords(minX, minY, minX+srcWidthF32+horzMargin*2, minY+srcHeightF32+vertMargin*2)
 	r.opts.Images[0] = source
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shader, &r.opts)
+	r.opts.Images[0] = nil
 }
 
 func (r *Renderer) DrawRectShader(target *ebiten.Image, ox, oy, w, h, horzMargin, vertMargin float32, shader *ebiten.Shader) {
@@ -130,6 +131,7 @@ func (r *Renderer) Upscale(target, source *ebiten.Image, ox, oy, scale float32, 
 		r.setFlatCustomVAs(1.0, 1.0, 0, 0)
 	}
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderBilinear, &r.opts)
+	r.opts.Images[0] = nil
 }
 
 func (r *Renderer) setDstRectCoords(minX, minY, maxX, maxY float32) {

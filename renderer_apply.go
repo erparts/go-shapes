@@ -523,6 +523,69 @@ func (r *Renderer) ApplyBlurD4(target *ebiten.Image, mask *ebiten.Image, ox, oy 
 
 	// upscale
 	r.opts.Blend = preBlend
+	clear(r.opts.Uniforms)
+	r.opts.Images[0] = nil
 	fx, fy := ox+float32(-downscaling-halfHorzMargin*downscaling), oy+float32(-downscaling-halfVertMargin*downscaling)
 	r.Upscale(target, dblur, fx, fy, downscaling, false)
+}
+
+func (r *Renderer) ApplyGlowD4(target *ebiten.Image, mask *ebiten.Image, ox, oy float32, horzKernel, vertKernel GaussKern, threshStart, threshEnd, colorMix float32) {
+	if threshStart > threshEnd {
+		panic("threshStart > threshEnd")
+	}
+
+	const downscaling = 4
+	maskBounds := mask.Bounds()
+	maskWidth, maskHeight := maskBounds.Dx(), maskBounds.Dy()
+	maskW64, maskH64 := float64(maskWidth), float64(maskHeight)
+	downW64, downH64 := maskW64/downscaling, maskH64/downscaling
+	downImgWidth, downImgHeight := math.Ceil(downW64)+2, math.Ceil(downH64)+2
+	down := r.getTemp(0, int(downImgWidth), int(downImgHeight))
+	down.Clear()
+
+	var opts ebiten.DrawImageOptions
+	opts.Filter = ebiten.FilterLinear
+	opts.GeoM.Scale(1.0/downscaling, 1.0/downscaling)
+	opts.GeoM.Translate(1, 1)
+	opts.Blend = ebiten.BlendCopy
+	down.DrawImage(mask, &opts)
+
+	// apply kern horz glow
+	halfHorzMargin, halfVertMargin := float64(horzKernel.Radius()), float64(vertKernel.Radius())
+	horzMargin, vertMargin := halfHorzMargin*2.0, halfVertMargin*2.0
+	dblurW64, dblurH64 := downW64+horzMargin, downH64+vertMargin
+	dglowImgWidth, dglowImgHeight := math.Ceil(dblurW64)+2, math.Ceil(dblurH64)+2
+	dglowHorz := r.getTemp(1, int(dglowImgWidth), int(downImgHeight))
+
+	r.setDstRectCoords(0, 0, float32(dblurW64)+2, float32(downH64)+2)
+	r.setSrcRectCoords(float32(-halfHorzMargin), float32(0), float32(downW64+halfHorzMargin)+2, float32(downH64)+2)
+	preBlend := r.opts.Blend
+	r.opts.Blend = ebiten.BlendCopy
+	r.setFlatCustomVAs(threshStart, threshEnd, colorMix, 0)
+	r.opts.Images[0] = down
+	r.opts.Uniforms["KernelLen"] = horzKernel.Size()
+	r.opts.Uniforms["Kernel"] = gaussKerns[horzKernel]
+	ensureShaderHorzGlowKernLoaded()
+	dglowHorz.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderHorzGlowKern, &r.opts)
+
+	// apply kern vert blur
+	if vertKernel != horzKernel {
+		r.opts.Uniforms["KernelLen"] = vertKernel.Size()
+		r.opts.Uniforms["Kernel"] = gaussKerns[vertKernel]
+	}
+	dglow := r.getTemp(0, int(dglowImgWidth), int(dglowImgHeight))
+	r.setDstRectCoords(0, 0, float32(dblurW64)+2, float32(dblurH64)+2)
+	r.setSrcRectCoords(0, float32(-halfVertMargin), float32(dblurW64)+2, float32(downH64+halfVertMargin)+2)
+	r.opts.Images[0] = dglowHorz
+	ensureShaderVertBlurKernLoaded()
+	dglow.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderVertBlurKern, &r.opts)
+
+	// upscale
+	r.opts.Blend = ebiten.BlendLighter
+	fx, fy := ox+float32(-downscaling-halfHorzMargin*downscaling), oy+float32(-downscaling-halfVertMargin*downscaling)
+	r.Upscale(target, dglow, fx, fy, downscaling, false)
+
+	r.opts.Blend = preBlend
+	clear(r.opts.Uniforms)
+	r.opts.Images[0] = nil
 }
