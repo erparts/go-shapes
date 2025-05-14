@@ -9,9 +9,9 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// go test -run ^TestApplyExpansion ./... -count 1
 // go test -run ^TestApplyErosion ./... -count 1
 // go test -run ^TestApplyOutline ./... -count 1
+// ...
 
 func TestApplyExpansion(t *testing.T) {
 	radius := float32(64.0)
@@ -351,6 +351,66 @@ func TestApplyGlowD4(t *testing.T) {
 	app.Renderer.SetColor(color.RGBA{96, 240, 240, 255})
 	app.Renderer.DrawTriangle(tri, m, s-m, s/2, m, s-m, s-m, 0)
 	app.Images = append(app.Images, tri)
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestApplyBlurKernBleed(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		canvas.Fill(color.Black)
+
+		i1, i2, i3 := 0, 1, 2
+		if ebiten.IsKeyPressed(ebiten.KeySpace) {
+			i1, i2, i3 = i2, i3, i1
+		}
+		ctx.Renderer.ApplyBlurD4(canvas, ctx.Images[i1], 16, 16, GaussKern9, GaussKern9, 1.0)
+		ctx.Renderer.ApplyBlurD4(canvas, ctx.Images[i2], 16+96*1, 16, GaussKern17, GaussKern17, 1.0)
+		ctx.Renderer.ApplyBlurD4(canvas, ctx.Images[i3], 16+96*2, 16, GaussKern11, GaussKern11, 1.0)
+		ctx.Renderer.ApplyBlurD4(canvas, ctx.Images[i3], 16, 16+96*1, GaussKern5, GaussKern5, 1.0)
+		ctx.Renderer.ApplyBlurD4(canvas, ctx.Images[i2], 16+96*1, 16+96*1, GaussKern13, GaussKern13, 1.0)
+		ctx.Renderer.ApplyBlurD4(canvas, ctx.Images[i1], 16+96*2, 16+96*1, GaussKern9, GaussKern9, 1.0)
+	})
+	app.Renderer.SetColorF32(1, 0, 1, 1)
+	img1 := app.Renderer.NewRect(33, 33)
+	app.Renderer.SetColorF32(0, 1, 1, 1)
+	img2 := app.Renderer.NewRect(50, 50)
+	app.Renderer.SetColorF32(1, 1, 0, 1)
+	img3 := app.Renderer.NewRect(67, 67)
+	app.Renderer.SetColorF32(1, 1, 1, 1)
+	app.Images = append(app.Images, img1, img2, img3)
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// Notice: some bleeding edge cases are quite difficult to reproduce
+// and haven't been able to catch them through tests yet, only live
+// code in more complex projects.
+func TestApplyGlowKernBleed(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		canvas.Fill(color.Black)
+
+		i1, i2, i3 := 0, 1, 2
+		if ebiten.IsKeyPressed(ebiten.KeySpace) {
+			i1, i2, i3 = i2, i3, i1
+		}
+		const st, et = 0.0, 0.5
+		ctx.Renderer.ApplyGlowD4(canvas, ctx.Images[i1], 16, 16, GaussKern9, GaussKern9, st, et, 1.0)
+		ctx.Renderer.ApplyGlowD4(canvas, ctx.Images[i2], 16+96*1, 16, GaussKern17, GaussKern17, st, et, 1.0)
+		ctx.Renderer.ApplyGlowD4(canvas, ctx.Images[i3], 16+96*2, 16, GaussKern11, GaussKern11, st, et, 1.0)
+		ctx.Renderer.ApplyGlowD4(canvas, ctx.Images[i3], 16, 16+96*1, GaussKern5, GaussKern5, st, et, 1.0)
+		ctx.Renderer.ApplyGlowD4(canvas, ctx.Images[i2], 16+96*1, 16+96*1, GaussKern13, GaussKern13, st, et, 1.0)
+		ctx.Renderer.ApplyGlowD4(canvas, ctx.Images[i1], 16+96*2, 16+96*1, GaussKern9, GaussKern9, st, et, 1.0)
+	})
+	app.Renderer.SetColorF32(1, 0, 1, 1)
+	img1 := app.Renderer.NewRect(33, 33)
+	app.Renderer.SetColorF32(0, 1, 1, 1)
+	img2 := app.Renderer.NewRect(50, 50)
+	app.Renderer.SetColorF32(1, 1, 0, 1)
+	img3 := app.Renderer.NewRect(67, 67)
+	app.Renderer.SetColorF32(1, 1, 1, 1)
+	app.Images = append(app.Images, img1, img2, img3)
 	if err := ebiten.RunGame(app); err != nil {
 		t.Fatal(err)
 	}
