@@ -109,8 +109,10 @@ func (r *Renderer) DrawRectShader(target *ebiten.Image, ox, oy, w, h, horzMargin
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shader, &r.opts)
 }
 
-// Upscale draws the source into the given target with a sharper upscaling than Ebitengine's linear filtering.
-func (r *Renderer) Upscale(target, source *ebiten.Image, ox, oy, scale float32, scaledSampling bool) {
+// Scale draws the source into the given target with two differences from Ebitengine's scaling:
+//   - scaledSampling can be set to true to mimic Ebitengine's v2.9.0 FilterPixelated.
+//   - Subimages can be scaled without bleeding edges, as the shader uses clamping.
+func (r *Renderer) Scale(target, source *ebiten.Image, ox, oy, scale float32, scaledSampling bool) {
 	srcBounds := source.Bounds()
 	srcWidth, srcHeight := srcBounds.Dx(), srcBounds.Dy()
 	srcWidthF32, srcHeightF32 := float32(srcWidth), float32(srcHeight)
