@@ -1,6 +1,7 @@
 package shapes
 
 import (
+	"image"
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -8,8 +9,7 @@ import (
 
 func (r *Renderer) NewRect(width, height int) *ebiten.Image {
 	img := ebiten.NewImage(width, height)
-	rgba := r.GetColorF32()
-	img.Fill(f32ToRGBA64(rgba[0], rgba[1], rgba[2], rgba[3]))
+	r.DrawIntArea(img, 0, 0, width, height)
 	return img
 }
 
@@ -27,7 +27,13 @@ func (r *Renderer) NewRing(inRadius, outRadius float64) *ebiten.Image {
 	return img
 }
 
-func (r *Renderer) DrawRect(target *ebiten.Image, ox, oy, w, h, rounding float32) {
+// DrawRect is the image.Rectangle compatible equivalent of [Renderer.DrawArea]().
+// When no rounding is required, prefer [Renderer.DrawIntArea]() instead.
+func (r *Renderer) DrawRect(target *ebiten.Image, rect image.Rectangle, rounding float32) {
+	r.DrawArea(target, float32(rect.Min.X), float32(rect.Min.Y), float32(rect.Dx()), float32(rect.Dy()), rounding)
+}
+
+func (r *Renderer) DrawArea(target *ebiten.Image, ox, oy, w, h, rounding float32) {
 	r.setDstRectCoords(ox, oy, ox+w, oy+h)
 	ensureShaderRectLoaded()
 	r.setFlatCustomVAs(ox, oy, w, h)
@@ -102,7 +108,12 @@ func (r *Renderer) DrawEllipse(target *ebiten.Image, cx, cy, horzRadius, vertRad
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderEllipse, &r.opts)
 }
 
-func (r *Renderer) DrawIntRect(target *ebiten.Image, ox, oy, w, h int) {
+// DrawIntRect is the image.Rectangle compatible equivalent of [Renderer.DrawIntArea]().
+func (r *Renderer) DrawIntRect(target *ebiten.Image, rect image.Rectangle) {
+	r.DrawIntArea(target, rect.Min.X, rect.Min.Y, rect.Dx(), rect.Dy())
+}
+
+func (r *Renderer) DrawIntArea(target *ebiten.Image, ox, oy, w, h int) {
 	bounds := target.Bounds()
 	minX, minY := bounds.Min.X, bounds.Min.Y
 	r.setDstRectCoords(float32(minX+ox), float32(minY+oy), float32(minX+ox+w), float32(minY+oy+h))
@@ -110,21 +121,26 @@ func (r *Renderer) DrawIntRect(target *ebiten.Image, ox, oy, w, h int) {
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderDefault, &r.opts)
 }
 
-func (r *Renderer) StrokeIntRect(target *ebiten.Image, ox, oy, w, h, outThickness, inThickness int) {
+// StrokeIntRect is the image.Rectangle compatible equivalent of [Renderer.StrokeIntArea]().
+func (r *Renderer) StrokeIntRect(target *ebiten.Image, area image.Rectangle, outThickness, inThickness int) {
+	r.StrokeIntArea(target, area.Min.X, area.Min.Y, area.Dx(), area.Dy(), outThickness, inThickness)
+}
+
+func (r *Renderer) StrokeIntArea(target *ebiten.Image, ox, oy, w, h, outThickness, inThickness int) {
 	if outThickness < 0 || inThickness < 0 {
 		panic("outThickness < 0 || inThickness < 0")
 	}
 
 	if outThickness == 0 {
 		if inThickness != 0 {
-			r.strokeIntInnerRect(target, ox, oy, w, h, inThickness)
+			r.strokeIntInnerArea(target, ox, oy, w, h, inThickness)
 		}
 	} else {
-		r.strokeIntInnerRect(target, ox-outThickness, oy-outThickness, w+outThickness*2, h+outThickness*2, outThickness+inThickness)
+		r.strokeIntInnerArea(target, ox-outThickness, oy-outThickness, w+outThickness*2, h+outThickness*2, outThickness+inThickness)
 	}
 }
 
-func (r *Renderer) strokeIntInnerRect(target *ebiten.Image, ox, oy, w, h, thickness int) {
+func (r *Renderer) strokeIntInnerArea(target *ebiten.Image, ox, oy, w, h, thickness int) {
 	bounds := target.Bounds()
 	minX, minY := bounds.Min.X, bounds.Min.Y
 	oox, ooy := float32(minX+ox), float32(minY+oy)
@@ -135,7 +151,7 @@ func (r *Renderer) strokeIntInnerRect(target *ebiten.Image, ox, oy, w, h, thickn
 	thickF32 := float32(thickness)
 	iox, ioy := oox+thickF32, ooy+thickF32
 	ifx, ify := ofx-thickF32, ofy-thickF32
-	if r.singleClr {
+	if r.singleClr || r.opts.Blend == ebiten.BlendClear {
 		r.vertices = append(r.vertices,
 			ebiten.Vertex{DstX: iox, DstY: ioy},
 			ebiten.Vertex{DstX: ifx, DstY: ioy},
