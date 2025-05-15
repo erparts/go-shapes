@@ -31,6 +31,11 @@ func ColorToF32(clr color.Color) [4]float32 {
 	return [4]float32{float32(r) / 65535.0, float32(g) / 65535.0, float32(b) / 65535.0, float32(a) / 65535.0}
 }
 
+func RGBF32(clr color.Color) [3]float32 {
+	r, g, b, _ := clr.RGBA()
+	return [3]float32{float32(r) / 65535.0, float32(g) / 65535.0, float32(b) / 65535.0}
+}
+
 func colorToF64(clr color.Color) [4]float64 {
 	r, g, b, a := clr.RGBA()
 	return [4]float64{float64(r) / 65535.0, float64(g) / 65535.0, float64(b) / 65535.0, float64(a) / 65535.0}

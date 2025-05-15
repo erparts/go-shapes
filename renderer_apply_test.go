@@ -415,3 +415,24 @@ func TestApplyGlowKernBleed(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestApplyColorGlowD4(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		canvas.Fill(color.Black)
+
+		lx, ly := ctx.LeftClickF32()
+		ctx.DrawAtF32(canvas, ctx.Images[0], lx, ly)
+		if !ebiten.IsKeyPressed(ebiten.KeySpace) {
+			loThresh := 0.1 + ctx.DistAnim(0.4, 1.0)
+			ctx.Renderer.ApplyColorGlowD4(canvas, ctx.Images[0], lx, ly, GaussKern7, GaussKern7, RGBF32(color.RGBA{255, 255, 0, 255}), float32(loThresh), 1.0, 1.0)
+		}
+	})
+
+	circ := app.Renderer.NewCircle(96.0)
+	img := ebiten.NewImage(circ.Bounds().Dx(), circ.Bounds().Dy())
+	app.Renderer.Gradient(img, circ, 0, 0, color.RGBA{255, 255, 0, 255}, color.RGBA{255, 0, 255, 255}, -1, 0, 1.0)
+	app.Images = append(app.Images, img)
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
