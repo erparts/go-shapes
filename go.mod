@@ -1,6 +1,6 @@
 module github.com/erparts/go-shapes
 
-go 1.24.2
+go 1.24.0
 
 require github.com/hajimehoshi/ebiten/v2 v2.8.7
 
