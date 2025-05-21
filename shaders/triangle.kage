@@ -19,10 +19,10 @@ func Fragment(targetCoords vec4, _ vec2, color vec4) vec4 {
 		alpha = inAlpha * outAlpha
 	} else if Thickness < 0 {
 		inAlpha := smoothstep(Thickness, Thickness+AAMargin, dist-Rounding)
-		outAlpha := 1.0 - smoothstep(-1.333, 0, dist-Rounding)
+		outAlpha := 1.0 - smoothstep(-AAMargin, 0, dist-Rounding)
 		alpha = inAlpha * outAlpha
 	} else {
-		alpha = 1.0 - smoothstep(-1.333, 0, dist-Rounding)
+		alpha = 1.0 - smoothstep(-AAMargin, 0, dist-Rounding)
 	}
 	alpha = pow(alpha, 1.0/2.2)
 	return color * alpha
