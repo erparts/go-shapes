@@ -81,14 +81,29 @@ var shaderHardShadowSrc []byte
 //go:embed shaders/zoom_shadow.kage
 var shaderZoomShadowSrc []byte
 
+//go:embed shaders/flat_paint.kage
+var shaderFlatPaintSrc []byte
+
 //go:embed shaders/gradient.kage
 var shaderGradientSrc []byte
+
+//go:embed shaders/tile_rects_grid.kage
+var shaderTileRectsGridSrc []byte
 
 //go:embed shaders/tile_dots_grid.kage
 var shaderTileDotsGridSrc []byte
 
 //go:embed shaders/tile_dots_hex.kage
 var shaderTileDotsHexSrc []byte
+
+//go:embed shaders/tile_tri_up_grid.kage
+var shaderTileTriUpGridSrc []byte
+
+//go:embed shaders/tile_tri_hex.kage
+var shaderTileTriHexSrc []byte
+
+//go:embed shaders/halftone_tri.kage
+var shaderHalftoneTriSrc []byte
 
 var shaderDefault *ebiten.Shader
 var shaderBilinear *ebiten.Shader
@@ -115,9 +130,14 @@ var shaderHorzColorGlow *ebiten.Shader
 var shaderShadow *ebiten.Shader
 var shaderHardShadow *ebiten.Shader
 var shaderZoomShadow *ebiten.Shader
+var shaderFlatPaint *ebiten.Shader
 var shaderGradient *ebiten.Shader
+var shaderTileRectsGrid *ebiten.Shader
 var shaderTileDotsGrid *ebiten.Shader
 var shaderTileDotsHex *ebiten.Shader
+var shaderTileTriUpGrid *ebiten.Shader
+var shaderTileTriHex *ebiten.Shader
+var shaderHalftoneTri *ebiten.Shader
 
 func mustCompile(src []byte) *ebiten.Shader {
 	shader, err := ebiten.NewShader(src)
@@ -277,9 +297,21 @@ func ensureShaderZoomShadowLoaded() {
 	}
 }
 
+func ensureShaderFlatPaintLoaded() {
+	if shaderFlatPaint == nil {
+		shaderFlatPaint = mustCompile(shaderFlatPaintSrc)
+	}
+}
+
 func ensureShaderGradientLoaded() {
 	if shaderGradient == nil {
 		shaderGradient = mustCompile(shaderGradientSrc)
+	}
+}
+
+func ensureShaderTileRectsGridLoaded() {
+	if shaderTileRectsGrid == nil {
+		shaderTileRectsGrid = mustCompile(shaderTileRectsGridSrc)
 	}
 }
 
@@ -292,5 +324,23 @@ func ensureShaderTileDotsGridLoaded() {
 func ensureShaderTileDotsHexLoaded() {
 	if shaderTileDotsHex == nil {
 		shaderTileDotsHex = mustCompile(shaderTileDotsHexSrc)
+	}
+}
+
+func ensureShaderTileTriUpGridLoaded() {
+	if shaderTileTriUpGrid == nil {
+		shaderTileTriUpGrid = mustCompile(shaderTileTriUpGridSrc)
+	}
+}
+
+func ensureShaderTileTriHexLoaded() {
+	if shaderTileTriHex == nil {
+		shaderTileTriHex = mustCompile(shaderTileTriHexSrc)
+	}
+}
+
+func ensureShaderHalftoneTriLoaded() {
+	if shaderHalftoneTri == nil {
+		shaderHalftoneTri = mustCompile(shaderHalftoneTriSrc)
 	}
 }

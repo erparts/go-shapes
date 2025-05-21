@@ -8,6 +8,12 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
+// FlatPaint draws the mask onto the given target using the renderer vertex colors.
+func (r *Renderer) FlatPaint(target, mask *ebiten.Image, ox, oy float32) {
+	ensureShaderFlatPaintLoaded()
+	r.DrawShaderAt(target, mask, ox, oy, 0, 0, shaderFlatPaint)
+}
+
 // SimpleGradient paints a high quality gradient over the given target.
 // Common gradient directions are:
 //   - Left to right: 0
