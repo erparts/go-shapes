@@ -109,6 +109,11 @@ func (r *Renderer) DrawRectShader(target *ebiten.Image, ox, oy, w, h, horzMargin
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shader, &r.opts)
 }
 
+func (r *Renderer) DrawShader(target *ebiten.Image, horzMargin, vertMargin float32, shader *ebiten.Shader) {
+	bounds := target.Bounds()
+	r.DrawRectShader(target, 0, 0, float32(bounds.Dx()), float32(bounds.Dy()), horzMargin, vertMargin, shader)
+}
+
 // Scale draws the source into the given target with two differences from Ebitengine's scaling:
 //   - scaledSampling can be set to true to mimic Ebitengine's v2.9.0 FilterPixelated.
 //   - Subimages can be scaled without bleeding edges, as the shader uses clamping.
