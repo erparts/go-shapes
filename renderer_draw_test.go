@@ -7,10 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// go test -run ^TestDrawShapes ./... -count 1
-// go test -run ^TestDrawEllipse ./... -count 1
-// ...
-
+// go test -run ^TestDrawShapes . -count 1
 func TestDrawShapes(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		canvas.Fill(color.Black)
@@ -42,6 +39,7 @@ func TestDrawShapes(t *testing.T) {
 	}
 }
 
+// go test -run ^TestDrawArea . -count 1
 func TestDrawArea(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		lx, ly := ctx.LeftClickF32()
@@ -62,6 +60,7 @@ func TestDrawArea(t *testing.T) {
 	}
 }
 
+// go test -run ^TestDrawIntArea . -count 1
 func TestStrokeIntArea(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		lx, ly := ctx.LeftClick.X, ctx.LeftClick.Y
@@ -91,6 +90,40 @@ func TestStrokeIntArea(t *testing.T) {
 	}
 }
 
+// go test -run ^TestStrokeArea . -count 1
+func TestStrokeArea(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		lx, ly := ctx.LeftClickF32()
+		ctx.Renderer.SetColor(color.RGBA{255, 255, 255, 255})
+		ctx.Renderer.DrawArea(canvas, lx, ly, 200, 50, 16)
+		ctx.Renderer.SetColor(color.RGBA{0, 255, 0, 255})
+		ctx.Renderer.StrokeArea(canvas, lx, ly, 200, 50, 2, 0, 16)
+
+		ctx.Renderer.SetColor(color.RGBA{128, 0, 0, 128})
+		ctx.Renderer.StrokeArea(canvas, lx, ly, 200, 50, 0, 2, 16)
+
+		rx, ry := ctx.RightClickF32()
+		ctx.Renderer.SetColor(color.RGBA{240, 0, 240, 255}, 0, 2)
+		ctx.Renderer.StrokeArea(canvas, rx, ry, 100, 50, 4, 4, 25)
+
+		a := uint8(ctx.DistAnim(144.0, 1.0))
+		ctx.Renderer.SetColor(color.RGBA{a, a, a, a})
+		ctx.Renderer.DrawIntArea(canvas, int(rx), int(ry), 100, 50)
+
+		ctx.Renderer.SetColor(color.RGBA{255, 0, 0, 255}, 0)
+		ctx.Renderer.SetColor(color.RGBA{0, 255, 0, 255}, 1)
+		ctx.Renderer.SetColor(color.RGBA{0, 0, 255, 255}, 2)
+		ctx.Renderer.SetColor(color.RGBA{0, 255, 255, 255}, 3)
+		extra := float32(ctx.DistAnim(16, 1.0))
+		subRounding := float32(ctx.DistAnim(20, 1.0))
+		ctx.Renderer.StrokeArea(canvas, lx, ry, 80+extra, 50, 8, 8, 25-subRounding)
+	})
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// go test -run ^TestDrawEllipse . -count 1
 func TestDrawEllipse(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		lx, ly := ctx.LeftClickF32()
@@ -113,6 +146,7 @@ func TestDrawEllipse(t *testing.T) {
 	}
 }
 
+// go test -run ^TestDrawRing . -count 1
 func TestDrawRing(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		lx, ly := ctx.LeftClickF32()

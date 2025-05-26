@@ -15,6 +15,9 @@ var shaderBilinearSrc []byte
 //go:embed shaders/rect.kage
 var shaderRectSrc []byte
 
+//go:embed shaders/stroke_rect.kage
+var shaderStrokeRectSrc []byte
+
 //go:embed shaders/line.kage
 var shaderLineSrc []byte
 
@@ -108,6 +111,7 @@ var shaderHalftoneTriSrc []byte
 var shaderDefault *ebiten.Shader
 var shaderBilinear *ebiten.Shader
 var shaderRect *ebiten.Shader
+var shaderStrokeRect *ebiten.Shader
 var shaderLine *ebiten.Shader
 var shaderCircle *ebiten.Shader
 var shaderRing *ebiten.Shader
@@ -162,6 +166,12 @@ func ensureShaderBilinearLoaded() {
 func ensureShaderRectLoaded() {
 	if shaderRect == nil {
 		shaderRect = mustCompile(shaderRectSrc)
+	}
+}
+
+func ensureShaderStrokeRectLoaded() {
+	if shaderStrokeRect == nil {
+		shaderStrokeRect = mustCompile(shaderStrokeRectSrc)
 	}
 }
 

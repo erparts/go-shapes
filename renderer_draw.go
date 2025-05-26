@@ -34,11 +34,11 @@ func (r *Renderer) DrawRect(target *ebiten.Image, rect image.Rectangle, rounding
 }
 
 func (r *Renderer) DrawArea(target *ebiten.Image, ox, oy, w, h, rounding float32) {
-	r.setDstRectCoords(ox, oy, ox+w, oy+h)
 	ensureShaderRectLoaded()
 	r.setFlatCustomVAs(ox, oy, w, h)
 	r.opts.Uniforms["Rounding"] = rounding
-	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderRect, &r.opts)
+	r.DrawRectShader(target, ox, oy, w, h, 0, 0, shaderRect)
+	clear(r.opts.Uniforms)
 }
 
 // DrawLine draws a smooth line between the given two points, with rounded ends.
@@ -221,6 +221,35 @@ func (r *Renderer) strokeIntInnerArea(target *ebiten.Image, ox, oy, w, h, thickn
 	ensureShaderDefaultLoaded()
 	target.DrawTrianglesShader(r.vertices[:], r.strokeIndices[:], shaderDefault, &r.opts)
 	r.vertices = r.vertices[:4]
+}
+
+// StrokeRect is the image.Rectangle compatible equivalent of [Renderer.DrawArea]().
+// When no rounding is required, prefer [Renderer.DrawIntArea]() instead.
+func (r *Renderer) StrokeRect(target *ebiten.Image, rect image.Rectangle, outThickness, inThickness, rounding float32) {
+	r.StrokeArea(target, float32(rect.Min.X), float32(rect.Min.Y), float32(rect.Dx()), float32(rect.Dy()), outThickness, inThickness, rounding)
+}
+
+func (r *Renderer) StrokeArea(target *ebiten.Image, ox, oy, w, h, outThickness, inThickness, rounding float32) {
+	if outThickness < 0 || inThickness < 0 {
+		panic("outThickness < 0 || inThickness < 0")
+	}
+
+	if outThickness == 0 {
+		if inThickness != 0 {
+			r.strokeInnerArea(target, ox, oy, w, h, inThickness, rounding)
+		}
+	} else {
+		r.strokeInnerArea(target, ox-outThickness, oy-outThickness, w+outThickness*2, h+outThickness*2, outThickness+inThickness, rounding)
+	}
+}
+
+func (r *Renderer) strokeInnerArea(target *ebiten.Image, ox, oy, w, h, inThickness, rounding float32) {
+	ensureShaderStrokeRectLoaded()
+	r.setFlatCustomVAs(ox, oy, w, h)
+	r.opts.Uniforms["InnerThickness"] = inThickness
+	r.opts.Uniforms["Rounding"] = rounding
+	r.DrawRectShader(target, ox, oy, w, h, 0, 0, shaderStrokeRect)
+	clear(r.opts.Uniforms)
 }
 
 // DrawTriangle draws a smooth triangle using the given vertices and an optional rounding factor.
