@@ -9,10 +9,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// go test -run ^TestApplyErosion ./... -count 1
-// go test -run ^TestApplyOutline ./... -count 1
-// ...
-
+// go test -run ^TestApplyExpansion . -count 1
 func TestApplyExpansion(t *testing.T) {
 	radius := float32(64.0)
 	expansion := float32(16.0)
@@ -31,6 +28,7 @@ func TestApplyExpansion(t *testing.T) {
 	}
 }
 
+// go test -run ^TestApplyErosion . -count 1
 func TestApplyErosion(t *testing.T) {
 	radius := float32(64.0)
 	erosion := float32(16.0)
@@ -53,6 +51,7 @@ func TestApplyErosion(t *testing.T) {
 	}
 }
 
+// go test -run ^TestApplyOutline . -count 1
 func TestApplyOutline(t *testing.T) {
 	radius := float32(64.0)
 	thick := float32(8.0)
@@ -78,6 +77,7 @@ func TestApplyOutline(t *testing.T) {
 	}
 }
 
+// go test -run ^TestApplyBlur . -count 1
 func TestApplyBlur(t *testing.T) {
 	radius := float32(64.0)
 	fxRadius := float32(32.0)
@@ -98,6 +98,7 @@ func TestApplyBlur(t *testing.T) {
 	}
 }
 
+// go test -run ^TestApplyBlur2 . -count 1
 func TestApplyBlur2(t *testing.T) {
 	radius := float32(64.0)
 	fxRadius := float32(32.0)
@@ -123,6 +124,7 @@ func TestApplyBlur2(t *testing.T) {
 	}
 }
 
+// go test -run ^TestApplyDirBlur . -count 1
 func TestApplyDirBlur(t *testing.T) {
 	radius := float32(64.0)
 	fxRadius := float32(32.0)
@@ -143,6 +145,7 @@ func TestApplyDirBlur(t *testing.T) {
 	}
 }
 
+// go test -run ^TestApplyBlurKern . -count 1
 func TestApplyBlurKern(t *testing.T) {
 	radius := float32(64.0)
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
@@ -171,6 +174,7 @@ func TestApplyBlurKern(t *testing.T) {
 	}
 }
 
+// go test -run ^TestApplyHardShadow . -count 1
 func TestApplyHardShadow(t *testing.T) {
 	radius := float32(64.0)
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
@@ -194,6 +198,7 @@ func TestApplyHardShadow(t *testing.T) {
 	}
 }
 
+// go test -run ^TestApplyShadow . -count 1
 func TestApplyShadow(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		canvas.Fill(color.Black)
@@ -222,6 +227,7 @@ func TestApplyShadow(t *testing.T) {
 	}
 }
 
+// go test -run ^TestApplyZoomShadow . -count 1
 func TestApplyZoomShadow(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		canvas.Fill(color.Black)
@@ -246,6 +252,7 @@ func TestApplyZoomShadow(t *testing.T) {
 	}
 }
 
+// go test -run ^TestApplyGlow . -count 1
 func TestApplyGlow(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		canvas.Fill(color.Black)
@@ -271,6 +278,7 @@ func TestApplyGlow(t *testing.T) {
 	}
 }
 
+// go test -run ^TestApplyHorzGlow . -count 1
 func TestApplyHorzGlow(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		canvas.Fill(color.Black)
@@ -296,6 +304,7 @@ func TestApplyHorzGlow(t *testing.T) {
 	}
 }
 
+// go test -run ^TestApplyDarkHorzGlow . -count 1
 func TestApplyDarkHorzGlow(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		canvas.Fill(color.White)
@@ -325,6 +334,7 @@ func TestApplyDarkHorzGlow(t *testing.T) {
 	}
 }
 
+// go test -run ^TestApplyGlowD4 . -count 1
 func TestApplyGlowD4(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		canvas.Fill(color.Black)
@@ -356,6 +366,7 @@ func TestApplyGlowD4(t *testing.T) {
 	}
 }
 
+// go test -run ^TestApplyBlurKernBleed . -count 1
 func TestApplyBlurKernBleed(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		canvas.Fill(color.Black)
@@ -384,6 +395,7 @@ func TestApplyBlurKernBleed(t *testing.T) {
 	}
 }
 
+// go test -run ^TestApplyGlowKernBleed . -count 1
 // Notice: some bleeding edge cases are quite difficult to reproduce
 // and haven't been able to catch them through tests yet, only live
 // code in more complex projects.
@@ -416,6 +428,7 @@ func TestApplyGlowKernBleed(t *testing.T) {
 	}
 }
 
+// go test -run ^TestApplyColorGlowD4 . -count 1
 func TestApplyColorGlowD4(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		canvas.Fill(color.Black)
