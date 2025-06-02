@@ -84,6 +84,9 @@ var shaderHardShadowSrc []byte
 //go:embed shaders/zoom_shadow.kage
 var shaderZoomShadowSrc []byte
 
+//go:embed shaders/scanlines_sharp.kage
+var shaderScanlinesSharpSrc []byte
+
 //go:embed shaders/flat_paint.kage
 var shaderFlatPaintSrc []byte
 
@@ -111,6 +114,9 @@ var shaderTileTriHexSrc []byte
 //go:embed shaders/halftone_tri.kage
 var shaderHalftoneTriSrc []byte
 
+//go:embed shaders/study_wave_funcs.kage
+var shaderStudyWaveFuncsSrc []byte
+
 var shaderDefault *ebiten.Shader
 var shaderBilinear *ebiten.Shader
 var shaderRect *ebiten.Shader
@@ -137,6 +143,7 @@ var shaderHorzColorGlow *ebiten.Shader
 var shaderShadow *ebiten.Shader
 var shaderHardShadow *ebiten.Shader
 var shaderZoomShadow *ebiten.Shader
+var shaderScanlinesSharp *ebiten.Shader
 var shaderFlatPaint *ebiten.Shader
 var shaderGradient *ebiten.Shader
 var shaderWarpBarrel *ebiten.Shader
@@ -146,6 +153,8 @@ var shaderTileDotsHex *ebiten.Shader
 var shaderTileTriUpGrid *ebiten.Shader
 var shaderTileTriHex *ebiten.Shader
 var shaderHalftoneTri *ebiten.Shader
+
+var shaderStudyWaveFuncs *ebiten.Shader
 
 func mustCompile(src []byte) *ebiten.Shader {
 	shader, err := ebiten.NewShader(src)
@@ -311,6 +320,12 @@ func ensureShaderZoomShadowLoaded() {
 	}
 }
 
+func ensureShaderScanlinesSharpLoaded() {
+	if shaderScanlinesSharp == nil {
+		shaderScanlinesSharp = mustCompile(shaderScanlinesSharpSrc)
+	}
+}
+
 func ensureShaderFlatPaintLoaded() {
 	if shaderFlatPaint == nil {
 		shaderFlatPaint = mustCompile(shaderFlatPaintSrc)
@@ -362,5 +377,11 @@ func ensureShaderTileTriHexLoaded() {
 func ensureShaderHalftoneTriLoaded() {
 	if shaderHalftoneTri == nil {
 		shaderHalftoneTri = mustCompile(shaderHalftoneTriSrc)
+	}
+}
+
+func ensureShaderStudyWaveFuncsLoaded() {
+	if shaderStudyWaveFuncs == nil {
+		shaderStudyWaveFuncs = mustCompile(shaderStudyWaveFuncsSrc)
 	}
 }
