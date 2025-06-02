@@ -48,6 +48,9 @@ func (ctx *TestAppCtx) RightClickF64() (x, y float64) {
 func (ctx *TestAppCtx) RadsAnim(speedFactor float64) float64 {
 	return math.Pi * math.Sin(float64(ctx.Ticks)*0.01*speedFactor)
 }
+func (ctx *TestAppCtx) ModAnim(maxValue, speedFactor float64) float64 {
+	return math.Mod((float64(ctx.Ticks) * 0.02 * speedFactor), maxValue)
+}
 func (ctx *TestAppCtx) DistAnim(maxDist, speedFactor float64) float64 {
 	return maxDist * (math.Sin(float64(ctx.Ticks)*0.02*speedFactor) + 1.0) / 2.0
 }

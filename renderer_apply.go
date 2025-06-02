@@ -583,3 +583,9 @@ func (r *Renderer) applyKernelD4(target *ebiten.Image, mask *ebiten.Image, ox, o
 		r.opts.Blend = preBlend
 	}
 }
+
+func (r *Renderer) ApplyScanlinesSharp(target *ebiten.Image, darkThick, clearThick int, intensity, offset float32) {
+	r.setFlatCustomVAs(float32(darkThick), float32(clearThick), intensity, offset)
+	ensureShaderScanlinesSharpLoaded()
+	r.DrawShader(target, 0, 0, shaderScanlinesSharp)
+}

@@ -1,0 +1,14 @@
+//kage:unit pixels
+package main
+
+func Fragment(targetCoords vec4, _ vec2, _ vec4, customVAs vec4) vec4 {
+	darkThick := customVAs[0]
+	clearThick := customVAs[1]
+	intensity := customVAs[2]
+	offset := customVAs[3]
+
+	relTargetY := (targetCoords.y - offset) - imageDstOrigin().y
+	scanY := mod(relTargetY, darkThick+clearThick)
+	a := step(scanY, darkThick)
+	return vec4(0, 0, 0, intensity*a)
+}

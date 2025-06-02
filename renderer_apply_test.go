@@ -449,3 +449,16 @@ func TestApplyColorGlowD4(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// go test -run ^TestScanlinesSharp . -count 1
+func TestScanlinesSharp(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		canvas.Fill(color.White)
+		const darkThick, clearThick = 3, 1
+		offset := float32(ctx.ModAnim(darkThick+clearThick, 1.0))
+		ctx.Renderer.ApplyScanlinesSharp(canvas, darkThick, clearThick, 0.05, offset)
+	})
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
