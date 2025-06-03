@@ -141,6 +141,29 @@ func (r *Renderer) Scale(target, source *ebiten.Image, ox, oy, scale float32, sc
 	r.opts.Images[0] = nil
 }
 
+// UnsafeTemp allows requesting offscreens to the renderer. These offscreens might have
+// already been created while the renderer was doing complex operations, so reusing them
+// can prevent the creation of additional offscreens.
+//
+// The offscreens returned by this function should only be used for local operations, and
+// the offscreen must not be stored. Any renderer function documented to use an internal
+// offscreen can panic or fail in any other way if an offscreen returned by this function
+// if passed as an input parameter.
+func (r *Renderer) UnsafeTemp(offscreenIndex int, w, h int) *ebiten.Image {
+	return r.getTemp(offscreenIndex, w, h)
+}
+
+// UnsafeTempCopy calls [Renderer.UnsafeTemp]() and copies the contents of source into
+// the returned offscreen. See safety warnings and docs for UnsafeTemp.
+func (r *Renderer) UnsafeTempCopy(offscreenIndex int, source *ebiten.Image) *ebiten.Image {
+	bounds := source.Bounds()
+	temp := r.UnsafeTemp(offscreenIndex, bounds.Dx(), bounds.Dy())
+	var opts ebiten.DrawImageOptions
+	opts.Blend = ebiten.BlendCopy
+	temp.DrawImage(source, &opts)
+	return temp
+}
+
 func (r *Renderer) setDstRectCoords(minX, minY, maxX, maxY float32) {
 	r.vertices[0].DstX = minX
 	r.vertices[0].DstY = minY

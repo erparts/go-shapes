@@ -119,6 +119,8 @@ func (r *Renderer) ApplyBlur(target *ebiten.Image, mask *ebiten.Image, ox, oy, r
 // ApplyBlur2 is similar to ApplyBlur, but uses two 1D passes instead of a single 2D pass.
 // This greatly reduces the amount of sampled pixels for the shader, and despite breaking
 // batching, tends to be much more efficient than ApplyBlur.
+//
+// This function uses one internal offscreen (#0).
 func (r *Renderer) ApplyBlur2(target *ebiten.Image, mask *ebiten.Image, ox, oy, radius, colorMix float32) {
 	if radius > 32 {
 		panic("radius can't exceed 32")
@@ -330,8 +332,7 @@ func (r *Renderer) ApplySimpleGlow(target *ebiten.Image, mask *ebiten.Image, ox,
 //     by the renderer's vertex colors. If 1, the glow color will be determined by the original
 //     mask colors. Any values in between will lead to linear interpolation.
 //
-// Notice that this effect uses an internal offscreen and two passes, which means it will
-// always break batching.
+// Notice that this effect uses an internal offscreen (#0) and two passes.
 func (r *Renderer) ApplyGlow(target *ebiten.Image, mask *ebiten.Image, ox, oy, horzRadius, vertRadius, threshStart, threshEnd, colorMix float32) {
 	if threshStart > threshEnd {
 		panic("threshStart > threshEnd")
@@ -517,6 +518,8 @@ func (r *Renderer) ApplyColorGlowD4(target *ebiten.Image, mask *ebiten.Image, ox
 // upscales the result back, optionally with a BlendLighter blend. At invokeShader, KernelLen
 // and Kernel uniforms have been set, as well as the downscaled source image, but other uniforms
 // and custom VAs have to be set during invocation.
+//
+// This function uses two internal offscreens (#0, #1).
 func (r *Renderer) applyKernelD4(target *ebiten.Image, mask *ebiten.Image, ox, oy float32, horzKernel, vertKernel GaussKern, invokeShader func(downHorzTarget *ebiten.Image), lighterBlend bool) {
 	// measures
 	const downscaling = 4
