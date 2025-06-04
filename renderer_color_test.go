@@ -83,6 +83,7 @@ func TestDitherMat4(t *testing.T) {
 		case 4:
 			mat = DitherCrumbs
 		}
+		mat = combineDitherMat4(mat, DitherBayes)
 
 		lx, ly := ctx.LeftClickF32()
 		ctx.Renderer.SetColorF32(1.0, 0.0, 0.0, 1.0, 0, 1)
@@ -90,7 +91,7 @@ func TestDitherMat4(t *testing.T) {
 		anim := float32(ctx.DistAnim(1.0, 1.0))
 		yOffset := int(ctx.ModAnim(4.0, 1.0))
 		xOffset := 8 - int(ctx.DistAnim(16.0, 1.0))
-		ctx.Renderer.DitherMat4(canvas, ctx.Images[0], lx, ly, xOffset, yOffset, DitherBRG, mat, anim, 0.0)
+		ctx.Renderer.DitherMat4(canvas, ctx.Images[0], lx, ly, xOffset, yOffset, DitherBW4, mat, anim, 0.0)
 
 		rx, ry := ctx.RightClickF32()
 		ctx.Renderer.DitherMat4(canvas, ctx.Images[1], rx, ry, 0, 0, DitherAlpha8, mat, 0, anim)
@@ -105,4 +106,12 @@ func TestDitherMat4(t *testing.T) {
 	if err := ebiten.RunGame(app); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func combineDitherMat4(a, b [16]float32) [16]float32 {
+	var out [16]float32
+	for i := range 16 {
+		out[i] = (a[i] + b[i]) / 2.0
+	}
+	return out
 }

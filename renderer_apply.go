@@ -475,6 +475,8 @@ var gaussKerns = [][9]float32{
 // powerful hardware and large blur areas (it uses less memory and compute at the
 // cost of more steps). When enough resources are available (e.g. most medium-sized
 // or small blurs), ApplyBlur2 tends to be slightly more efficient than ApplyBlurD4.
+//
+// This function uses two internal offscreens (#0, #1).
 func (r *Renderer) ApplyBlurD4(target *ebiten.Image, mask *ebiten.Image, ox, oy float32, horzKernel, vertKernel GaussKern, colorMix float32) {
 	r.applyKernelD4(target, mask, ox, oy, horzKernel, vertKernel, func(downHorzTarget *ebiten.Image) {
 		r.setFlatCustomVA0(colorMix)
@@ -483,6 +485,10 @@ func (r *Renderer) ApplyBlurD4(target *ebiten.Image, mask *ebiten.Image, ox, oy 
 	}, true)
 }
 
+// ApplyGlowD4 is the multipass downscaling version of [Renderer.ApplyGlow]().
+// See [Renderer.ApplyBlurD4]() for further docs and context.
+//
+// This function uses two internal offscreens (#0, #1).
 func (r *Renderer) ApplyGlowD4(target *ebiten.Image, mask *ebiten.Image, ox, oy float32, horzKernel, vertKernel GaussKern, threshStart, threshEnd, colorMix float32) {
 	if threshStart > threshEnd {
 		panic("threshStart > threshEnd")
@@ -495,6 +501,10 @@ func (r *Renderer) ApplyGlowD4(target *ebiten.Image, mask *ebiten.Image, ox, oy 
 	}, true)
 }
 
+// ApplyColorGlowD4 is a color-specific version of [Renderer.ApplyGlowD4](), where glow
+// intensity is determined by color similarity instead of lightness.
+//
+// This function uses two internal offscreens (#0, #1).
 func (r *Renderer) ApplyColorGlowD4(target *ebiten.Image, mask *ebiten.Image, ox, oy float32, horzKernel, vertKernel GaussKern, rgb [3]float32, threshStart, threshEnd, colorMix float32) {
 	if threshStart > threshEnd {
 		panic("threshStart > threshEnd")
