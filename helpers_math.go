@@ -4,6 +4,24 @@ import (
 	"math"
 )
 
+type GoldenRatioGen struct {
+	n float64
+}
+
+func (gen *GoldenRatioGen) Reset() {
+	gen.n = 0
+}
+
+func (gen *GoldenRatioGen) Float64() float64 {
+	const phi = 1.618033988749895 // golden ratio
+	gen.n += 1.0
+	if gen.n == 514230.0 {
+		gen.n = 1.0
+	}
+	v := math.Mod(gen.n/phi, 1.0)
+	return v
+}
+
 func lerp[Float float32 | float64](a, b, t Float) Float {
 	return a + t*(b-a)
 }
