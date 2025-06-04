@@ -34,6 +34,14 @@ func (r *Renderer) DrawRect(target *ebiten.Image, rect image.Rectangle, rounding
 }
 
 func (r *Renderer) DrawArea(target *ebiten.Image, ox, oy, w, h, rounding float32) {
+	if w < 0 {
+		w = -w
+		ox -= w
+	}
+	if h < 0 {
+		h = -h
+		oy -= h
+	}
 	ensureShaderRectLoaded()
 	r.setFlatCustomVAs(ox, oy, w, h)
 	r.opts.Uniforms["Rounding"] = rounding
@@ -114,6 +122,14 @@ func (r *Renderer) DrawIntRect(target *ebiten.Image, rect image.Rectangle) {
 }
 
 func (r *Renderer) DrawIntArea(target *ebiten.Image, ox, oy, w, h int) {
+	if w < 0 {
+		w = -w
+		ox -= w
+	}
+	if h < 0 {
+		h = -h
+		oy -= h
+	}
 	bounds := target.Bounds()
 	minX, minY := bounds.Min.X, bounds.Min.Y
 	r.setDstRectCoords(float32(minX+ox), float32(minY+oy), float32(minX+ox+w), float32(minY+oy+h))
@@ -127,6 +143,14 @@ func (r *Renderer) StrokeIntRect(target *ebiten.Image, area image.Rectangle, out
 }
 
 func (r *Renderer) StrokeIntArea(target *ebiten.Image, ox, oy, w, h, outThickness, inThickness int) {
+	if w < 0 {
+		w = -w
+		ox -= w
+	}
+	if h < 0 {
+		h = -h
+		oy -= h
+	}
 	if outThickness < 0 || inThickness < 0 {
 		panic("outThickness < 0 || inThickness < 0")
 	}
@@ -230,6 +254,15 @@ func (r *Renderer) StrokeRect(target *ebiten.Image, rect image.Rectangle, outThi
 }
 
 func (r *Renderer) StrokeArea(target *ebiten.Image, ox, oy, w, h, outThickness, inThickness, rounding float32) {
+	if w < 0 {
+		w = -w
+		ox -= w
+	}
+	if h < 0 {
+		h = -h
+		oy -= h
+	}
+
 	if outThickness < 0 || inThickness < 0 {
 		panic("outThickness < 0 || inThickness < 0")
 	}
