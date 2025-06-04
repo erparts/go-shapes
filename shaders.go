@@ -93,6 +93,9 @@ var shaderFlatPaintSrc []byte
 //go:embed shaders/gradient.kage
 var shaderGradientSrc []byte
 
+//go:embed shaders/dither_matrix4.kage
+var shaderDitherMat4Src []byte
+
 //go:embed shaders/warp_barrel.kage
 var shaderWarpBarrelSrc []byte
 
@@ -146,6 +149,7 @@ var shaderZoomShadow *ebiten.Shader
 var shaderScanlinesSharp *ebiten.Shader
 var shaderFlatPaint *ebiten.Shader
 var shaderGradient *ebiten.Shader
+var shaderDitherMat4 *ebiten.Shader
 var shaderWarpBarrel *ebiten.Shader
 var shaderTileRectsGrid *ebiten.Shader
 var shaderTileDotsGrid *ebiten.Shader
@@ -335,6 +339,12 @@ func ensureShaderFlatPaintLoaded() {
 func ensureShaderGradientLoaded() {
 	if shaderGradient == nil {
 		shaderGradient = mustCompile(shaderGradientSrc)
+	}
+}
+
+func ensureShaderDitherMat4Loaded() {
+	if shaderDitherMat4 == nil {
+		shaderDitherMat4 = mustCompile(shaderDitherMat4Src)
 	}
 }
 

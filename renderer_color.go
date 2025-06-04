@@ -8,6 +8,25 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
+// Direction constants for use with gradient generation functions.
+const (
+	DirRadsLTR float32 = 0.0          // left to right
+	DirRadsRTL float32 = math.Pi      // right to left
+	DirRadsTTB float32 = math.Pi / 2  // top to bottom
+	DirRadsBTT float32 = -math.Pi / 2 // bottom to top
+
+	DirRadsTLBR float32 = math.Pi / 4      // top-left to bottom-right
+	DirRadsBLTR float32 = -math.Pi / 4     // bottmo-left to top-right
+	DirRadsTRBL float32 = 3 * math.Pi / 4  // top-right to bottom-left
+	DirRadsBRTL float32 = -3 * math.Pi / 4 // bottom-right to top-left
+)
+
+func (r *Renderer) NewSimpleGradient(w, h int, from, to color.RGBA, dirRadians float32) *ebiten.Image {
+	img := ebiten.NewImage(w, h)
+	r.SimpleGradient(img, from, to, dirRadians)
+	return img
+}
+
 // FlatPaint draws the mask onto the given target using the renderer vertex colors.
 func (r *Renderer) FlatPaint(target, mask *ebiten.Image, ox, oy float32) {
 	ensureShaderFlatPaintLoaded()
@@ -15,22 +34,15 @@ func (r *Renderer) FlatPaint(target, mask *ebiten.Image, ox, oy float32) {
 }
 
 // SimpleGradient paints a high quality gradient over the given target.
-// Common gradient directions are:
-//   - Left to right: 0
-//   - Right to left: math.Pi
-//   - Top to bottom: math.Pi/2
-//   - Bottom to top: -math.Pi/2
-//   - Top-left to bottom-right: math.Pi/4
-//   - Bottom-left to top-right: -math.Pi/4
-//   - Top-right to bottom-left: 3*math.Pi/4
-//   - Bottom-right to top-left: -3*math.Pi/4
+// See [DirRadsLTR] and similar constants for common gradient directions.
 func (r *Renderer) SimpleGradient(target *ebiten.Image, from, to color.RGBA, dirRadians float32) {
 	r.Gradient(target, nil, 0, 0, from, to, -1, dirRadians, 1.0)
 }
 
 // Gradient paints a high quality gradient over the given target. If mask is nil,
 // the target will have the gradient applied starting from (ox, oy) throughout
-// the entire image.
+// the entire image. See [DirRadsLTR] and similar constants for common gradient
+// directions.
 //
 // CurveFactor allows making the gradient linear (1.0), or ease it towards an
 // early start (e.g. 0.5) or late start (e.g. 2.0). Reasonable CurveFactor values
@@ -103,4 +115,88 @@ func linearize(colorChan float64) float64 {
 	} else {
 		return colorChan / 12.92
 	}
+}
+
+var DitherBayes [16]float32 = [16]float32{
+	0.0 / 16.0, 12.0 / 16.0, 3.0 / 16.0, 15.0 / 16.0,
+	8.0 / 16.0, 4.0 / 16.0, 11.0 / 16.0, 7.0 / 16.0,
+	2.0 / 16.0, 14.0 / 16.0, 1.0 / 16.0, 13.0 / 16.0,
+	10.0 / 16.0, 6.0 / 16.0, 9.0 / 16.0, 5.0 / 16.0,
+}
+var DitherDots [16]float32 = [16]float32{
+	12.0 / 16.0, 4.0 / 16.0, 11.0 / 16.0, 15.0 / 16.0,
+	5.0 / 16.0, 0.0 / 16.0, 3.0 / 16.0, 10.0 / 16.0,
+	6.0 / 16.0, 1.0 / 16.0, 2.0 / 16.0, 9.0 / 16.0,
+	13.0 / 16.0, 7.0 / 16.0, 8.0 / 16.0, 14.0 / 16.0,
+}
+var DitherSerp [16]float32 = [16]float32{
+	0.0 / 16.0, 12.0 / 16.0, 13.0 / 16.0, 1.0 / 16.0,
+	3.0 / 16.0, 7.0 / 16.0, 6.0 / 16.0, 2.0 / 16.0,
+	4.0 / 16.0, 8.0 / 16.0, 9.0 / 16.0, 5.0 / 16.0,
+	11.0 / 16.0, 15.0 / 16.0, 14.0 / 16.0, 10.0 / 16.0,
+}
+var DitherGlitch [16]float32 = [16]float32{
+	0.0 / 16.0, 1.0 / 16.0, 2.0 / 16.0, 3.0 / 16.0,
+	4.0 / 16.0, 5.0 / 16.0, 6.0 / 16.0, 7.0 / 16.0,
+	8.0 / 16.0, 9.0 / 16.0, 10.0 / 16.0, 11.0 / 16.0,
+	12.0 / 16.0, 13.0 / 16.0, 14.0 / 16.0, 15.0 / 16.0,
+}
+
+var DitherCrumbs [16]float32 = [16]float32{
+	0.0 / 16.0, 4.0 / 16.0, 8.0 / 16.0, 1.0 / 16.0,
+	11.0 / 16.0, 14.0 / 16.0, 12.0 / 16.0, 5.0 / 16.0,
+	7.0 / 16.0, 13.0 / 16.0, 15.0 / 16.0, 9.0 / 16.0,
+	3.0 / 16.0, 10.0 / 16.0, 6.0 / 16.0, 2.0 / 16.0,
+}
+
+var DitherBW []float32 = []float32{
+	0.0, 0.0, 0.0, 1.0,
+	1.0, 1.0, 1.0, 1.0,
+}
+var DitherBW4 []float32 = []float32{
+	0.0, 0.0, 0.0, 1.0,
+	0.333, 0.333, 0.333, 1.0,
+	0.666, 0.666, 0.666, 1.0,
+	1.0, 1.0, 1.0, 1.0,
+}
+
+var DitherAlpha8 []float32 = []float32{
+	0.0, 0.0, 0.0, 0.0,
+	1.0 / 7.0, 1.0 / 7.0, 1.0 / 7.0, 1.0 / 7.0,
+	2.0 / 7.0, 2.0 / 7.0, 2.0 / 7.0, 2.0 / 7.0,
+	3.0 / 7.0, 3.0 / 7.0, 3.0 / 7.0, 3.0 / 7.0,
+	4.0 / 7.0, 4.0 / 7.0, 4.0 / 7.0, 4.0 / 7.0,
+	5.0 / 7.0, 5.0 / 7.0, 5.0 / 7.0, 5.0 / 7.0,
+	6.0 / 7.0, 6.0 / 7.0, 6.0 / 7.0, 6.0 / 7.0,
+	1.0, 1.0, 1.0, 1.0,
+}
+var DitherBRG []float32 = []float32{
+	0.0, 0.0, 1.0, 1.0,
+	1.0, 0.0, 0.0, 1.0,
+	0.0, 1.0, 0.0, 1.0,
+}
+
+// DitherMat4 draws the given mask to the target applying a static 4x4 dithering pattern to select colors from
+// rgbaColors. The rgbaColors argument can contain up to 8 colors, flattened as RGBA quadruplets in [0...1] range.
+// You can test with DitherBW4. The ditherMatrix argument is a 4x4 dithering matrix in column major order (like
+// GLSL), where the values indicate the thresholds of the pattern in 0...1 range. You can test with [DitherBayes].
+func (r *Renderer) DitherMat4(target, mask *ebiten.Image, ox, oy float32, xOffset, yOffset int, rgbaColors []float32, ditherMatrix [16]float32, rendererClrMix, maskColorMix float32) {
+	if len(rgbaColors)%4 != 0 {
+		panic("rgbaColors must have length multiple of 4")
+	}
+	numColors := len(rgbaColors) / 4
+	if numColors > 8 {
+		panic("DitherMat4 currently only supports up to 8 colors")
+	} else if numColors <= 1 {
+		panic("DitherMat4 expects at least 2 colors (as 8 float32 values)")
+	}
+	var palette [4 * 8]float32
+	copy(palette[:], rgbaColors)
+
+	r.setFlatCustomVAs(float32(xOffset), float32(yOffset), rendererClrMix, maskColorMix)
+	r.opts.Uniforms["Matrix"] = ditherMatrix
+	r.opts.Uniforms["NumColors"] = numColors
+	r.opts.Uniforms["Colors"] = palette
+	ensureShaderDitherMat4Loaded()
+	r.DrawShaderAt(target, mask, ox, oy, 0, 0, shaderDitherMat4)
 }

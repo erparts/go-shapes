@@ -64,3 +64,45 @@ func TestFlatPaint(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// go test -run ^TestDitherMat4 . -count 1
+func TestDitherMat4(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		canvas.Fill(color.RGBA{128, 0, 128, 255})
+
+		var mat [16]float32
+		switch int(ctx.ModAnim(5.0, 0.25)) {
+		case 0:
+			mat = DitherBayes
+		case 1:
+			mat = DitherDots
+		case 2:
+			mat = DitherGlitch
+		case 3:
+			mat = DitherSerp
+		case 4:
+			mat = DitherCrumbs
+		}
+
+		lx, ly := ctx.LeftClickF32()
+		ctx.Renderer.SetColorF32(1.0, 0.0, 0.0, 1.0, 0, 1)
+		ctx.Renderer.SetColorF32(1.0, 0.0, 1.0, 1.0, 2, 3)
+		anim := float32(ctx.DistAnim(1.0, 1.0))
+		yOffset := int(ctx.ModAnim(4.0, 1.0))
+		xOffset := 8 - int(ctx.DistAnim(16.0, 1.0))
+		ctx.Renderer.DitherMat4(canvas, ctx.Images[0], lx, ly, xOffset, yOffset, DitherBRG, mat, anim, 0.0)
+
+		rx, ry := ctx.RightClickF32()
+		ctx.Renderer.DitherMat4(canvas, ctx.Images[1], rx, ry, 0, 0, DitherAlpha8, mat, 0, anim)
+	})
+
+	from, to := color.RGBA{0, 0, 0, 255}, color.RGBA{255, 255, 255, 255}
+	gradient := app.Renderer.NewSimpleGradient(160, 160, from, to, DirRadsLTR)
+	app.Images = append(app.Images, gradient)
+	from, to = color.RGBA{0, 0, 0, 255}, color.RGBA{255, 255, 255, 255}
+	gradient = app.Renderer.NewSimpleGradient(160, 160, from, to, DirRadsTLBR)
+	app.Images = append(app.Images, gradient)
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}

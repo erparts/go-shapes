@@ -1,0 +1,26 @@
+//kage:unit pixels
+package main
+
+var Matrix mat4
+var NumColors int
+var Colors [8]vec4
+
+func Fragment(targetCoords vec4, sourceCoords vec2, color vec4, customVAs vec4) vec4 {
+	offset := customVAs.xy
+	triClrMix := customVAs[2]
+	srcClrMix := customVAs[3]
+
+	sample := imageSrc0UnsafeAt(sourceCoords)
+	luminance := dot(sample.rgb, vec3(0.299, 0.587, 0.114)) // * sample.a
+
+	relTargetCoords := targetCoords.xy - imageDstOrigin() - offset
+	x := int(relTargetCoords.x) & 0b11 // >> 2
+	y := int(relTargetCoords.y) & 0b11 // >> 2
+	threshold := Matrix[x][y]
+	ditherLvl := luminance*float(NumColors) + threshold - 0.5
+	ditherIndex := clamp(int(floor(ditherLvl)), 0, NumColors-1)
+	out := Colors[ditherIndex]
+	out = mix(out, out*color, triClrMix)
+	out.rgb = mix(out.rgb, out.rgb*sample.rgb, srcClrMix)
+	return out * sample.a
+}
