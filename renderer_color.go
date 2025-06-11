@@ -78,12 +78,11 @@ func (r *Renderer) Gradient(target, mask *ebiten.Image, ox, oy float32, from, to
 	r.SetColorF32(float32(toOklab[0]), float32(toOklab[1]), float32(toOklab[2]), float32(toF64[3]))
 	r.setFlatCustomVAs(float32(fromOklab[0]), float32(fromOklab[1]), float32(fromOklab[2]), float32(fromF64[3]))
 
-	clear(r.opts.Uniforms)
 	r.opts.Uniforms["Area"] = [4]float32{ox, oy, srcWidth, srcHeight}
 	r.opts.Uniforms["DirRadians"] = dirRadians
 	r.opts.Uniforms["NumSteps"] = numSteps
 	r.opts.Uniforms["CurveFactor"] = curveFactor
-	if mask != nil { //
+	if mask != nil {
 		r.opts.Uniforms["UseMask"] = 1
 	} else {
 		r.opts.Uniforms["UseMask"] = 0
@@ -94,6 +93,62 @@ func (r *Renderer) Gradient(target, mask *ebiten.Image, ox, oy float32, from, to
 	ensureShaderGradientLoaded()
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderGradient, &r.opts)
 	r.opts.Images[0] = nil
+	clear(r.opts.Uniforms)
+	r.SetColorF32(memo[0], memo[1], memo[2], memo[3])
+}
+
+// GradientRadial paints a high quality radial gradient over the given target.
+//
+// CurveFactor allows making the gradient linear (1.0), or ease it towards an
+// early start (e.g. 0.5) or late start (e.g. 2.0). Reasonable CurveFactor values
+// typically fall in the ~[0.2...4.0] range.
+//
+// Three radiuses are necessary:
+//   - fromRadius: distances below this threshold take 'from' color. Use 0.0 if
+//     you don't need a solid central area.
+//   - transRadius: distances below this threshold but above fromRadius interpolate
+//     colors between 'from' and 'to'.
+//   - toRadius: distances below this threshold but above transRadius take 'to' color.
+//     Distances above this threshold are not painted. Use toRadius = transRadius for
+//     a gradient that ends at the given radius, or Float32Inf() if you want 'to'
+//     color to extend beyond the gradient radius.
+//
+// To mask the gradient over an existing image, consider [Renderer.SetBlend](ebiten.BlendSourceIn)
+// and similar tricks.
+func (r *Renderer) GradientRadial(target *ebiten.Image, cx, cy float32, from, to color.RGBA, fromRadius, transRadius, toRadius float32, numSteps int, curveFactor float32) {
+	if curveFactor < 0.001 {
+		panic("curveFactor must be positive above 0.001")
+	}
+	if transRadius < fromRadius || toRadius < transRadius {
+		panic("invalid radius values (radiuses must be equal or increasing)")
+	}
+
+	dstBounds := target.Bounds()
+	dstMinX, dstMinY := float32(dstBounds.Min.X), float32(dstBounds.Min.Y)
+	dstWidthF64, dstHeightF64 := float64(dstBounds.Dx()), float64(dstBounds.Dy())
+	cxF64, cyF64, toRadiusF64 := float64(cx), float64(cy), float64(toRadius)
+	ox, oy := float32(max(math.Floor(cxF64-toRadiusF64), 0)), float32(max(math.Floor(cyF64-toRadiusF64), 0))
+	fx, fy := float32(min(math.Ceil(cxF64+toRadiusF64), dstWidthF64)), float32(min(math.Ceil(cyF64+toRadiusF64), dstHeightF64))
+	minX, minY := dstMinX+ox, dstMinY+oy
+	maxX, maxY := dstMinX+fx, dstMinY+fy
+	r.setDstRectCoords(minX, minY, maxX, maxY)
+
+	fromF64, toF64 := colorToF64(from), colorToF64(to)
+	memo := r.GetColorF32()
+	fromOklab := rgbToOklab([3]float64(fromF64[:3]))
+	toOklab := rgbToOklab([3]float64(toF64[:3]))
+	r.SetColorF32(float32(toOklab[0]), float32(toOklab[1]), float32(toOklab[2]), float32(toF64[3]))
+	r.setFlatCustomVAs(float32(fromOklab[0]), float32(fromOklab[1]), float32(fromOklab[2]), float32(fromF64[3]))
+
+	r.opts.Uniforms["Radius"] = [3]float32{fromRadius, transRadius, toRadius}
+	r.opts.Uniforms["Origin"] = [2]float32{cx, cy}
+	r.opts.Uniforms["NumSteps"] = numSteps
+	r.opts.Uniforms["CurveFactor"] = curveFactor
+
+	// draw shader
+	ensureShaderGradientRadialLoaded()
+	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderGradientRadial, &r.opts)
+	clear(r.opts.Uniforms)
 	r.SetColorF32(memo[0], memo[1], memo[2], memo[3])
 }
 

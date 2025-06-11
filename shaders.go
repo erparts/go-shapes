@@ -93,6 +93,9 @@ var shaderFlatPaintSrc []byte
 //go:embed shaders/gradient.kage
 var shaderGradientSrc []byte
 
+//go:embed shaders/gradient_radial.kage
+var shaderGradientRadialSrc []byte
+
 //go:embed shaders/dither_matrix4.kage
 var shaderDitherMat4Src []byte
 
@@ -149,6 +152,7 @@ var shaderZoomShadow *ebiten.Shader
 var shaderScanlinesSharp *ebiten.Shader
 var shaderFlatPaint *ebiten.Shader
 var shaderGradient *ebiten.Shader
+var shaderGradientRadial *ebiten.Shader
 var shaderDitherMat4 *ebiten.Shader
 var shaderWarpBarrel *ebiten.Shader
 var shaderTileRectsGrid *ebiten.Shader
@@ -339,6 +343,12 @@ func ensureShaderFlatPaintLoaded() {
 func ensureShaderGradientLoaded() {
 	if shaderGradient == nil {
 		shaderGradient = mustCompile(shaderGradientSrc)
+	}
+}
+
+func ensureShaderGradientRadialLoaded() {
+	if shaderGradientRadial == nil {
+		shaderGradientRadial = mustCompile(shaderGradientRadialSrc)
 	}
 }
 
