@@ -1,4 +1,5 @@
 # shapes
+[![Go Reference](https://pkg.go.dev/badge/github.com/erparts/go-shapes.svg)](https://pkg.go.dev/github.com/erparts/go-shapes)
 
 `shapes` is a package for [**Ebitengine**](https://github.com/hajimehoshi/ebiten) (the 2D game library written by Hajime Hoshi) that allows rendering some common shapes and effects in complementary ways to the official [`vector`](github.com/hajimehoshi/ebiten/v2/vector) package. Some examples:
 
