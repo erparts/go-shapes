@@ -208,6 +208,24 @@ func (r *Renderer) setFlatCustomVAs01(cva0, cva1 float32) {
 	}
 }
 
+// SetCustomVAs configures up to 4 custom vertex attributes.
+func (r *Renderer) SetCustomVAs(vas ...float32) {
+	switch len(vas) {
+	case 0:
+		// nothing
+	case 1:
+		r.setFlatCustomVA0(vas[0])
+	case 2:
+		r.setFlatCustomVAs01(vas[0], vas[1])
+	case 3:
+		r.setFlatCustomVAs(vas[0], vas[1], vas[2], 0.0)
+	case 4:
+		r.setFlatCustomVAs(vas[0], vas[1], vas[2], vas[3])
+	default:
+		panic("only up to 4 custom VAs allowed")
+	}
+}
+
 func (r *Renderer) getTemp(offscreenIndex int, w, h int) *ebiten.Image {
 	if offscreenIndex >= len(r.temps) {
 		growth := offscreenIndex + 1 - len(r.temps)
