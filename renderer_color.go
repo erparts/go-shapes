@@ -172,6 +172,12 @@ func linearize(colorChan float64) float64 {
 	}
 }
 
+func (r *Renderer) OklabShiftChroma(target, source *ebiten.Image, x, y, chromaShift float32) {
+	ensureShaderOklabShiftChromaLoaded()
+	r.setFlatCustomVA0(chromaShift)
+	r.DrawShaderAt(target, source, x, y, 0, 0, shaderOklabShiftChroma)
+}
+
 // ColorMix draws 'base' and 'over' to 'target' using the mix() function
 // for color mixing instead of BlendSourceOver or other standard composition
 // operations. This is useful to interpolate color transitions or other image

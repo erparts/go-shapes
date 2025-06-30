@@ -96,6 +96,27 @@ func TestGradientRadial(t *testing.T) {
 	}
 }
 
+// go test -run ^TestOklabShiftChroma . -count 1
+func TestOklabShiftChroma(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		canvas.Fill(color.Black)
+
+		lx, ly := ctx.LeftClickF32()
+		shift := float32(0.15 - ctx.DistAnim(0.3, 1.0))
+		ctx.Renderer.OklabShiftChroma(canvas, ctx.Images[0], lx, ly, shift)
+
+		rx, ry := ctx.RightClickF32()
+		ctx.DrawAtF32(canvas, ctx.Images[0], rx, ry)
+	})
+
+	app.Renderer.SetColorF32(0.8, 0.5, 0.0, 1.0)
+	circ := app.Renderer.NewCircle(64.0)
+	app.Images = append(app.Images, circ)
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
+
 // go test -run ^TestDitherMat4 . -count 1
 func TestDitherMat4(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
