@@ -203,3 +203,19 @@ func TestAlphaMask(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// go test -run ^TestAlphaHorzFade . -count 1
+func TestAlphaHorzFade(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		canvas.Fill(color.Black)
+		lx, ly := ctx.LeftClickF32()
+		x, _ := ebiten.CursorPosition()
+		ctx.Renderer.AlphaHorzFade(canvas, ctx.Images[0], lx, ly, lx+256/2.0, float32(x))
+	})
+
+	rect := app.Renderer.NewRect(256, 64)
+	app.Images = append(app.Images, rect)
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
