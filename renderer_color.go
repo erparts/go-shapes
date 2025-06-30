@@ -172,6 +172,37 @@ func linearize(colorChan float64) float64 {
 	}
 }
 
+// ColorMix draws 'base' and 'over' to 'target' using the mix() function
+// for color mixing instead of BlendSourceOver or other standard composition
+// operations. This is useful to interpolate color transitions or other image
+// changes when the images have translucent areas.
+//
+// The bounds of 'base' and 'over' must match.
+func (r *Renderer) ColorMix(target, base, over *ebiten.Image, x, y int, alpha, mixLevel float32) {
+	srcBounds := base.Bounds()
+	if !srcBounds.Eq(over.Bounds()) {
+		panic("'base' and 'over' bounds must match")
+	}
+
+	srcWidth, srcHeight := srcBounds.Dx(), srcBounds.Dy()
+	srcWidthF32, srcHeightF32 := float32(srcWidth), float32(srcHeight)
+	dstBounds := target.Bounds()
+	minX := float32(dstBounds.Min.X) + float32(x)
+	minY := float32(dstBounds.Min.Y) + float32(y)
+	r.setDstRectCoords(minX, minY, minX+srcWidthF32, minY+srcHeightF32)
+	minX = float32(srcBounds.Min.X)
+	minY = float32(srcBounds.Min.Y)
+	r.setSrcRectCoords(minX, minY, minX+srcWidthF32, minY+srcHeightF32)
+
+	r.setFlatCustomVAs01(alpha, mixLevel)
+	r.opts.Images[0] = base
+	r.opts.Images[1] = over
+	ensureShaderColorMixLoaded()
+	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderColorMix, &r.opts)
+	r.opts.Images[0] = nil
+	r.opts.Images[1] = nil
+}
+
 var DitherBayes [16]float32 = [16]float32{
 	0.0 / 16.0, 12.0 / 16.0, 3.0 / 16.0, 15.0 / 16.0,
 	8.0 / 16.0, 4.0 / 16.0, 11.0 / 16.0, 7.0 / 16.0,

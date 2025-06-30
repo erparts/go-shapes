@@ -146,3 +146,20 @@ func combineDitherMat4(a, b [16]float32) [16]float32 {
 	}
 	return out
 }
+
+// go test -run ^TestColorMix . -count 1
+func TestColorMix(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		canvas.Fill(color.Black)
+		lvl := float32(ctx.DistAnim(1.0, 1.0))
+		ctx.Renderer.ColorMix(canvas, ctx.Images[0], ctx.Images[1], ctx.LeftClick.X, ctx.LeftClick.Y, 0.5, lvl)
+	})
+
+	circ := app.Renderer.NewCircle(64.0)
+	app.Renderer.SetColorF32(1.0, 0, 1.0, 1.0)
+	circ2 := app.Renderer.NewCircle(64.0)
+	app.Images = append(app.Images, circ, circ2)
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}

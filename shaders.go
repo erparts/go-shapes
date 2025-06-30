@@ -96,6 +96,9 @@ var shaderGradientSrc []byte
 //go:embed shaders/gradient_radial.kage
 var shaderGradientRadialSrc []byte
 
+//go:embed shaders/color_mix.kage
+var shaderColorMixSrc []byte
+
 //go:embed shaders/dither_matrix4.kage
 var shaderDitherMat4Src []byte
 
@@ -153,6 +156,7 @@ var shaderScanlinesSharp *ebiten.Shader
 var shaderFlatPaint *ebiten.Shader
 var shaderGradient *ebiten.Shader
 var shaderGradientRadial *ebiten.Shader
+var shaderColorMix *ebiten.Shader
 var shaderDitherMat4 *ebiten.Shader
 var shaderWarpBarrel *ebiten.Shader
 var shaderTileRectsGrid *ebiten.Shader
@@ -349,6 +353,12 @@ func ensureShaderGradientLoaded() {
 func ensureShaderGradientRadialLoaded() {
 	if shaderGradientRadial == nil {
 		shaderGradientRadial = mustCompile(shaderGradientRadialSrc)
+	}
+}
+
+func ensureShaderColorMixLoaded() {
+	if shaderColorMix == nil {
+		shaderColorMix = mustCompile(shaderColorMixSrc)
 	}
 }
 
