@@ -99,6 +99,9 @@ var shaderGradientRadialSrc []byte
 //go:embed shaders/color_mix.kage
 var shaderColorMixSrc []byte
 
+//go:embed shaders/alpha_mask.kage
+var shaderAlphaMaskSrc []byte
+
 //go:embed shaders/dither_matrix4.kage
 var shaderDitherMat4Src []byte
 
@@ -157,6 +160,7 @@ var shaderFlatPaint *ebiten.Shader
 var shaderGradient *ebiten.Shader
 var shaderGradientRadial *ebiten.Shader
 var shaderColorMix *ebiten.Shader
+var shaderAlphaMask *ebiten.Shader
 var shaderDitherMat4 *ebiten.Shader
 var shaderWarpBarrel *ebiten.Shader
 var shaderTileRectsGrid *ebiten.Shader
@@ -359,6 +363,12 @@ func ensureShaderGradientRadialLoaded() {
 func ensureShaderColorMixLoaded() {
 	if shaderColorMix == nil {
 		shaderColorMix = mustCompile(shaderColorMixSrc)
+	}
+}
+
+func ensureShaderAlphaMaskLoaded() {
+	if shaderAlphaMask == nil {
+		shaderAlphaMask = mustCompile(shaderAlphaMaskSrc)
 	}
 }
 
