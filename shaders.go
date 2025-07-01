@@ -96,8 +96,8 @@ var shaderGradientSrc []byte
 //go:embed shaders/gradient_radial.kage
 var shaderGradientRadialSrc []byte
 
-//go:embed shaders/oklab_shift_chroma.kage
-var shaderOklabShiftChromaSrc []byte
+//go:embed shaders/oklab_shift.kage
+var shaderOklabShiftSrc []byte
 
 //go:embed shaders/color_mix.kage
 var shaderColorMixSrc []byte
@@ -165,7 +165,7 @@ var shaderScanlinesSharp *ebiten.Shader
 var shaderFlatPaint *ebiten.Shader
 var shaderGradient *ebiten.Shader
 var shaderGradientRadial *ebiten.Shader
-var shaderOklabShiftChroma *ebiten.Shader
+var shaderOklabShift *ebiten.Shader
 var shaderColorMix *ebiten.Shader
 var shaderAlphaMask *ebiten.Shader
 var shaderAlphaHorzFade *ebiten.Shader
@@ -368,9 +368,9 @@ func ensureShaderGradientRadialLoaded() {
 	}
 }
 
-func ensureShaderOklabShiftChromaLoaded() {
-	if shaderOklabShiftChroma == nil {
-		shaderOklabShiftChroma = mustCompile(shaderOklabShiftChromaSrc)
+func ensureShaderOklabShiftLoaded() {
+	if shaderOklabShift == nil {
+		shaderOklabShift = mustCompile(shaderOklabShiftSrc)
 	}
 }
 

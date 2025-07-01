@@ -2,19 +2,23 @@
 package main
 
 func Fragment(_ vec4, sourceCoords vec2, _ vec4, customVAs vec4) vec4 {
+	const Pi = 3.14159265359
+
 	pixel := imageSrc0UnsafeAt(sourceCoords)
 
 	// convert color to oklab
-	lab := RGBToOklab(pixel.rgb)
+	lab := RGBToOklab(pixel.rgb / pixel.a)
 
-	// convert to polar form, adjust chroma, go back
+	// convert to polar form, adjust LCh, go back
 	lch := LCh(lab)
-	lch[1] = clamp(lch[1]+customVAs[0], 0.0, 1.0)
+	lch[0] = clamp(lch[0]+customVAs[0], 0, 1)
+	lch[1] = clamp(lch[1]+customVAs[1], 0, 0.5)
+	lch[2] = mod(lch[2]+customVAs[2], 2*Pi)
 	lab = LAB(lch)
 
 	// convert color back to RGB
 	rgb := OklabToRGB(lab)
-	return vec4(rgb, pixel.a)
+	return vec4(rgb*pixel.a, pixel.a)
 }
 
 func RGBToOklab(rgb vec3) vec3 {

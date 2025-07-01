@@ -172,10 +172,16 @@ func linearize(colorChan float64) float64 {
 	}
 }
 
-func (r *Renderer) OklabShiftChroma(target, source *ebiten.Image, x, y, chromaShift float32) {
-	ensureShaderOklabShiftChromaLoaded()
-	r.setFlatCustomVA0(chromaShift)
-	r.DrawShaderAt(target, source, x, y, 0, 0, shaderOklabShiftChroma)
+// OklabShift draws the source image to the target, at the given coordinates,
+// with the given LCh shifts applied on oklab color space. The expected value
+// ranges are the following:
+//   - lightness: [0, 1]
+//   - chroma: [0, 0.5]
+//   - hue: in radians, wrapping is done automatically
+func (r *Renderer) OklabShift(target, source *ebiten.Image, x, y, lightnessShift, chromaShift, hueShift float32) {
+	ensureShaderOklabShiftLoaded()
+	r.setFlatCustomVAs(lightnessShift, chromaShift, hueShift, 0.0)
+	r.DrawShaderAt(target, source, x, y, 0, 0, shaderOklabShift)
 }
 
 // ColorMix draws 'base' and 'over' to 'target' using the mix() function

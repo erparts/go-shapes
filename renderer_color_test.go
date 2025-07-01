@@ -96,14 +96,16 @@ func TestGradientRadial(t *testing.T) {
 	}
 }
 
-// go test -run ^TestOklabShiftChroma . -count 1
-func TestOklabShiftChroma(t *testing.T) {
+// go test -run ^TestOklabShift . -count 1
+func TestOklabShift(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		canvas.Fill(color.Black)
 
 		lx, ly := ctx.LeftClickF32()
-		shift := float32(0.15 - ctx.DistAnim(0.3, 1.0))
-		ctx.Renderer.OklabShiftChroma(canvas, ctx.Images[0], lx, ly, shift)
+		chromaShift := float32(0.3 - ctx.DistAnim(0.6, 0.4))
+		lightnessShift := float32(0.5 - ctx.DistAnim(1.0, 1.0))
+		hueShift := float32(ctx.ModAnim(2*math.Pi, 0.5))
+		ctx.Renderer.OklabShift(canvas, ctx.Images[0], lx, ly, lightnessShift, chromaShift, hueShift)
 
 		rx, ry := ctx.RightClickF32()
 		ctx.DrawAtF32(canvas, ctx.Images[0], rx, ry)
