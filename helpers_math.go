@@ -30,6 +30,13 @@ func (gen *GoldenRatioGen) Float64() float64 {
 	return v
 }
 
+func abs[Float float32 | float64](a Float) Float {
+	if a < 0 {
+		return -a
+	}
+	return a
+}
+
 func lerp[Float float32 | float64](a, b, t Float) Float {
 	return a + t*(b-a)
 }
@@ -74,4 +81,65 @@ func parallelsAtDist(a, b, c float64, dist float64) (float64, float64) {
 	}
 	shift := dist * norm
 	return c - shift, c + shift
+}
+
+// gaussian elimination 8x8 homogeneous linear system solver
+func gaussSolver8x8(sys [8][8]float32, weights [8]float32) [8]float32 {
+	var x [8]float32
+	for i := range 8 {
+		// find pivot
+		maxRow := i
+		for k := i + 1; k < 8; k++ {
+			if abs(sys[k][i]) > abs(sys[maxRow][i]) {
+				maxRow = k
+			}
+		}
+
+		// swap rows
+		sys[i], sys[maxRow] = sys[maxRow], sys[i]
+		weights[i], weights[maxRow] = weights[maxRow], weights[i]
+
+		// eliminate
+		for k := i + 1; k < 8; k++ {
+			f := sys[k][i] / sys[i][i]
+			for j := i; j < 8; j++ {
+				sys[k][j] -= f * sys[i][j]
+			}
+			weights[k] -= f * weights[i]
+		}
+	}
+
+	// substitution
+	for i := 7; i >= 0; i-- {
+		sum := float32(0)
+		for j := i + 1; j < 8; j++ {
+			sum += sys[i][j] * x[j]
+		}
+		x[i] = (weights[i] - sum) / sys[i][i]
+	}
+
+	return x
+}
+
+// points are given in clockwise order, from top-left.
+// returned matrix is row-major order
+func computeHomography(fromQuad, toQuad [4]PointF32) [9]float32 {
+	var system [8][8]float32
+	var weights [8]float32
+
+	var i int
+	for j, pt := range fromQuad {
+		u, v := toQuad[j].X, toQuad[j].Y
+		system[i+0] = [8]float32{pt.X, pt.Y, 1, 0, 0, 0, -u * pt.X, -u * pt.Y}
+		system[i+1] = [8]float32{0, 0, 0, pt.X, pt.Y, 1, -v * pt.X, -v * pt.Y}
+		weights[i+0] = u
+		weights[i+1] = v
+		i += 2
+	}
+
+	solutions := gaussSolver8x8(system, weights)
+	var homography [9]float32
+	_ = copy(homography[:], solutions[:])
+	homography[8] = 1.0
+	return homography
 }
