@@ -36,6 +36,24 @@ var shaderTriangleSrc []byte
 //go:embed shaders/hexagon.kage
 var shaderHexagonSrc []byte
 
+//go:embed shaders/alpha_mask_circ.kage
+var shaderAlphaMaskCircSrc []byte
+
+//go:embed shaders/mask.kage
+var shaderMaskSrc []byte
+
+//go:embed shaders/mask_at.kage
+var shaderMaskAtSrc []byte
+
+//go:embed shaders/mask_horz.kage
+var shaderMaskHorzSrc []byte
+
+//go:embed shaders/mask_circle.kage
+var shaderMaskCircleSrc []byte
+
+//go:embed shaders/mask_threshold.kage
+var shaderMaskThresholdSrc []byte
+
 //go:embed shaders/expansion.kage
 var shaderExpansionSrc []byte
 
@@ -102,17 +120,17 @@ var shaderOklabShiftSrc []byte
 //go:embed shaders/color_mix.kage
 var shaderColorMixSrc []byte
 
-//go:embed shaders/alpha_mask.kage
-var shaderAlphaMaskSrc []byte
-
-//go:embed shaders/alpha_horz_fade.kage
-var shaderAlphaHorzFadeSrc []byte
-
 //go:embed shaders/dither_matrix4.kage
 var shaderDitherMat4Src []byte
 
 //go:embed shaders/warp_barrel.kage
 var shaderWarpBarrelSrc []byte
+
+//go:embed shaders/noise.kage
+var shaderNoiseSrc []byte
+
+//go:embed shaders/noise_golden.kage
+var shaderNoiseGoldenSrc []byte
 
 //go:embed shaders/tile_rects_grid.kage
 var shaderTileRectsGridSrc []byte
@@ -145,6 +163,12 @@ var shaderRing *ebiten.Shader
 var shaderEllipse *ebiten.Shader
 var shaderTriangle *ebiten.Shader
 var shaderHexagon *ebiten.Shader
+var shaderAlphaMaskCirc *ebiten.Shader
+var shaderMask *ebiten.Shader
+var shaderMaskAt *ebiten.Shader
+var shaderMaskHorz *ebiten.Shader
+var shaderMaskCircle *ebiten.Shader
+var shaderMaskThreshold *ebiten.Shader
 var shaderExpansion *ebiten.Shader
 var shaderErosion *ebiten.Shader
 var shaderOutline *ebiten.Shader
@@ -167,10 +191,10 @@ var shaderGradient *ebiten.Shader
 var shaderGradientRadial *ebiten.Shader
 var shaderOklabShift *ebiten.Shader
 var shaderColorMix *ebiten.Shader
-var shaderAlphaMask *ebiten.Shader
-var shaderAlphaHorzFade *ebiten.Shader
 var shaderDitherMat4 *ebiten.Shader
 var shaderWarpBarrel *ebiten.Shader
+var shaderNoise *ebiten.Shader
+var shaderNoiseGolden *ebiten.Shader
 var shaderTileRectsGrid *ebiten.Shader
 var shaderTileDotsGrid *ebiten.Shader
 var shaderTileDotsHex *ebiten.Shader
@@ -245,6 +269,42 @@ func ensureShaderTriangleLoaded() {
 func ensureShaderHexagonLoaded() {
 	if shaderHexagon == nil {
 		shaderHexagon = mustCompile(shaderHexagonSrc)
+	}
+}
+
+func ensureShaderAlphaMaskCircLoaded() {
+	if shaderAlphaMaskCirc == nil {
+		shaderAlphaMaskCirc = mustCompile(shaderAlphaMaskCircSrc)
+	}
+}
+
+func ensureShaderMaskLoaded() {
+	if shaderMask == nil {
+		shaderMask = mustCompile(shaderMaskSrc)
+	}
+}
+
+func ensureShaderMaskAtLoaded() {
+	if shaderMaskAt == nil {
+		shaderMaskAt = mustCompile(shaderMaskAtSrc)
+	}
+}
+
+func ensureShaderMaskHorzLoaded() {
+	if shaderMaskHorz == nil {
+		shaderMaskHorz = mustCompile(shaderMaskHorzSrc)
+	}
+}
+
+func ensureShaderMaskCircleLoaded() {
+	if shaderMaskCircle == nil {
+		shaderMaskCircle = mustCompile(shaderMaskCircleSrc)
+	}
+}
+
+func ensureShaderMaskThresholdLoaded() {
+	if shaderMaskThreshold == nil {
+		shaderMaskThreshold = mustCompile(shaderMaskThresholdSrc)
 	}
 }
 
@@ -380,18 +440,6 @@ func ensureShaderColorMixLoaded() {
 	}
 }
 
-func ensureShaderAlphaMaskLoaded() {
-	if shaderAlphaMask == nil {
-		shaderAlphaMask = mustCompile(shaderAlphaMaskSrc)
-	}
-}
-
-func ensureShaderAlphaHorzFadeLoaded() {
-	if shaderAlphaHorzFade == nil {
-		shaderAlphaHorzFade = mustCompile(shaderAlphaHorzFadeSrc)
-	}
-}
-
 func ensureShaderDitherMat4Loaded() {
 	if shaderDitherMat4 == nil {
 		shaderDitherMat4 = mustCompile(shaderDitherMat4Src)
@@ -401,6 +449,18 @@ func ensureShaderDitherMat4Loaded() {
 func ensureShaderWarpBarrelLoaded() {
 	if shaderWarpBarrel == nil {
 		shaderWarpBarrel = mustCompile(shaderWarpBarrelSrc)
+	}
+}
+
+func ensureShaderNoiseLoaded() {
+	if shaderNoise == nil {
+		shaderNoise = mustCompile(shaderNoiseSrc)
+	}
+}
+
+func ensureShaderNoiseGoldenLoaded() {
+	if shaderNoiseGolden == nil {
+		shaderNoiseGolden = mustCompile(shaderNoiseGoldenSrc)
 	}
 }
 

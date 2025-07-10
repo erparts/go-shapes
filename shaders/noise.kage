@@ -1,0 +1,29 @@
+//kage:unit pixels
+package main
+
+func Fragment(targetCoords vec4, _ vec2, color vec4, customVAs vec4) vec4 {
+	intensity := customVAs[0]
+	seed := customVAs[1]
+	cycle := customVAs[2]
+	size := imageDstSize()
+	xyz := vec3((targetCoords.xy-imageDstOrigin())/max(size.x, size.y), seed)
+
+	value := hash3A(xyz)
+	if cycle > 0 { // avoid branch if anim not used
+		value += cycle * sign(hash2B(xyz.xy)-0.5)
+	}
+	value = abs(fract(value)*2.0 - 1.0)
+	return color * value * intensity
+}
+
+func hash2B(xy vec2) float {
+	return fract(sin(dot(xy, vec2(7*3.14159265, 13*1.61803398))) * 99000)
+}
+
+func hash3A(xyz vec3) float {
+	return fract(sin(dot(xyz, vec3(12.9898, 78.233, 37.719))) * 43758.5453)
+}
+
+func hash3B(xyz vec3) float {
+	return fract(sin(dot(xyz, vec3(7*3.14159265, 13*1.61803398, 17*2.71828182))) * 99000)
+}

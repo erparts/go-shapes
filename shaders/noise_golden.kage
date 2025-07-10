@@ -1,0 +1,18 @@
+//kage:unit pixels
+package main
+
+func Fragment(targetCoords vec4, _ vec2, color vec4, customVAs vec4) vec4 {
+	const Phi = 1.618033988749895
+
+	scale := customVAs.x
+	intensity := customVAs.y
+	t := customVAs.z
+	relCoords := vec2(targetCoords.xy - imageDstOrigin())
+
+	const baseScale = 50.0
+	xn := fract(relCoords.x/Phi) * baseScale * scale
+	yn := fract(relCoords.y/Phi) * baseScale * scale
+	value := fract(((xn * yn) + t*0.1))
+
+	return color * value * intensity
+}
