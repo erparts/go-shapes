@@ -123,6 +123,9 @@ var shaderColorMixSrc []byte
 //go:embed shaders/dither_matrix4.kage
 var shaderDitherMat4Src []byte
 
+//go:embed shaders/map_projective.kage
+var shaderMapProjectiveSrc []byte
+
 //go:embed shaders/warp_barrel.kage
 var shaderWarpBarrelSrc []byte
 
@@ -192,6 +195,7 @@ var shaderGradientRadial *ebiten.Shader
 var shaderOklabShift *ebiten.Shader
 var shaderColorMix *ebiten.Shader
 var shaderDitherMat4 *ebiten.Shader
+var shaderMapProjective *ebiten.Shader
 var shaderWarpBarrel *ebiten.Shader
 var shaderNoise *ebiten.Shader
 var shaderNoiseGolden *ebiten.Shader
@@ -443,6 +447,12 @@ func ensureShaderColorMixLoaded() {
 func ensureShaderDitherMat4Loaded() {
 	if shaderDitherMat4 == nil {
 		shaderDitherMat4 = mustCompile(shaderDitherMat4Src)
+	}
+}
+
+func ensureShaderMapProjectiveLoaded() {
+	if shaderMapProjective == nil {
+		shaderMapProjective = mustCompile(shaderMapProjectiveSrc)
 	}
 }
 
