@@ -1,0 +1,37 @@
+//kage:unit pixels
+package main
+
+var RngPattern int // from 0 to 4
+
+func Fragment(targetCoords vec4, sourceCoords vec2, color vec4, customVAs vec4) vec4 {
+	origin := customVAs.xy
+	maxDist := customVAs.z
+	distRand := customVAs.w
+	relTargetCoords := targetCoords.xy - imageDstOrigin()
+
+	dist := distance(origin, relTargetCoords)
+	far := min(dist/maxDist, 1.0)
+	rand := 0.0
+	if distRand > 0 {
+		size := imageDstSize()
+		rand = hash2(relTargetCoords/max(size.x, size.y), RngPattern) * distRand
+	}
+
+	return mix(vec4(0), color, (far+rand)/(1.0+distRand))
+}
+
+func hash2(xy vec2, pattern int) float {
+	if pattern == 1 { // aesthetic line flare
+		return fract(dot(xy, vec2(7*3.14159265, 13*1.61803398)) * 9900)
+	} else if pattern == 2 { // modern elliptical cuts
+		return fract(dot(xy, vec2(7*3.14159265, 13*1.61803398)) * 990)
+	} else if pattern == 3 { // circular mesh
+		return fract((dot(xy, vec2(7*3.14159265, 13*1.61803398))) * 10)
+	} else if pattern == 4 { // golden grid aesthetic
+		const Phi = 1.618033988749895
+		xy = fract(xy/Phi) * 177.0
+		return fract(xy.x * xy.y)
+	} else { // particles
+		return fract(sin(dot(xy, vec2(7*3.14159265, 13*1.61803398))) * 99000)
+	}
+}

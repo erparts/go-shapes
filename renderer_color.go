@@ -215,36 +215,6 @@ func (r *Renderer) ColorMix(target, base, over *ebiten.Image, x, y int, alpha, m
 	r.opts.Images[1] = nil
 }
 
-// AlphaMask draws 'source' over 'target', but using 'mask' as an alpha mask.
-func (r *Renderer) AlphaMask(target, source, mask *ebiten.Image, x, y, xMask, yMask float32) {
-	srcBounds := source.Bounds()
-	srcWidth, srcHeight := srcBounds.Dx(), srcBounds.Dy()
-	srcWidthF32, srcHeightF32 := float32(srcWidth), float32(srcHeight)
-	dstBounds := target.Bounds()
-	minX := float32(dstBounds.Min.X) + x
-	minY := float32(dstBounds.Min.Y) + y
-	r.setDstRectCoords(minX, minY, minX+srcWidthF32, minY+srcHeightF32)
-	minX = float32(srcBounds.Min.X)
-	minY = float32(srcBounds.Min.Y)
-	r.setSrcRectCoords(minX, minY, minX+srcWidthF32, minY+srcHeightF32)
-
-	r.setFlatCustomVAs01(x-xMask, y-yMask)
-	r.opts.Images[0] = source
-	r.opts.Images[1] = mask
-	ensureShaderAlphaMaskLoaded()
-	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderAlphaMask, &r.opts)
-	r.opts.Images[0] = nil
-	r.opts.Images[1] = nil
-}
-
-// AlphaHorzFade draws 'source' over 'target' but with an horizontal alpha fade between
-// the given points.
-func (r *Renderer) AlphaHorzFade(target, source *ebiten.Image, x, y, inX, outX float32) {
-	ensureShaderAlphaHorzFadeLoaded()
-	r.setFlatCustomVAs01(inX, outX)
-	r.DrawShaderAt(target, source, x, y, 0, 0, shaderAlphaHorzFade)
-}
-
 var DitherBayes [16]float32 = [16]float32{
 	0.0 / 16.0, 12.0 / 16.0, 3.0 / 16.0, 15.0 / 16.0,
 	8.0 / 16.0, 4.0 / 16.0, 11.0 / 16.0, 7.0 / 16.0,

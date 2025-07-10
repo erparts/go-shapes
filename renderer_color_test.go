@@ -186,38 +186,3 @@ func TestColorMix(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-
-// go test -run ^TestAlphaMask . -count 1
-func TestAlphaMask(t *testing.T) {
-	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
-		canvas.Fill(color.Black)
-		lx, ly := ctx.LeftClickF32()
-		dist := float32(ctx.DistAnim(256.0, 1.0))
-		ctx.Renderer.AlphaMask(canvas, ctx.Images[0], ctx.Images[1], lx+dist, ly, lx, ly)
-	})
-
-	circ := app.Renderer.NewCircle(32.0)
-	app.Renderer.SetColorF32(0, 0, 0, 0, 1, 2)
-	trans := app.Renderer.NewRect(256, 64)
-	app.Renderer.SetColorF32(1, 1, 1, 1)
-	app.Images = append(app.Images, circ, trans)
-	if err := ebiten.RunGame(app); err != nil {
-		t.Fatal(err)
-	}
-}
-
-// go test -run ^TestAlphaHorzFade . -count 1
-func TestAlphaHorzFade(t *testing.T) {
-	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
-		canvas.Fill(color.Black)
-		lx, ly := ctx.LeftClickF32()
-		x, _ := ebiten.CursorPosition()
-		ctx.Renderer.AlphaHorzFade(canvas, ctx.Images[0], lx, ly, lx+256/2.0, float32(x))
-	})
-
-	rect := app.Renderer.NewRect(256, 64)
-	app.Images = append(app.Images, rect)
-	if err := ebiten.RunGame(app); err != nil {
-		t.Fatal(err)
-	}
-}
