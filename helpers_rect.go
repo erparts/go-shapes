@@ -8,6 +8,18 @@ func rectOriginSize(bounds image.Rectangle) (ox, oy, w, h int) {
 	return bounds.Min.X, bounds.Min.Y, bounds.Dx(), bounds.Dy()
 }
 
+func rectOriginSizeF32(bounds image.Rectangle) (ox, oy, w, h float32) {
+	return float32(bounds.Min.X), float32(bounds.Min.Y), float32(bounds.Dx()), float32(bounds.Dy())
+}
+
+func rectOriginF32(bounds image.Rectangle) (ox, oy float32) {
+	return float32(bounds.Min.X), float32(bounds.Min.Y)
+}
+
+func rectSizeF32(bounds image.Rectangle) (w, h float32) {
+	return float32(bounds.Dx()), float32(bounds.Dy())
+}
+
 func topBorder(bounds image.Rectangle, borderSize int) image.Rectangle {
 	bounds.Max.Y = bounds.Min.Y + borderSize
 	return bounds

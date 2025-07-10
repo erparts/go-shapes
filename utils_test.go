@@ -52,7 +52,14 @@ func (ctx *TestAppCtx) ModAnim(maxValue, speedFactor float64) float64 {
 	return math.Mod((float64(ctx.Ticks) * 0.02 * speedFactor), maxValue)
 }
 func (ctx *TestAppCtx) DistAnim(maxDist, speedFactor float64) float64 {
-	return maxDist * (math.Sin(float64(ctx.Ticks)*0.02*speedFactor) + 1.0) / 2.0
+	value := maxDist * (math.Sin(float64(ctx.Ticks)*0.02*speedFactor) + 1.0) / 2.0
+	return snapEdges(value, 0.0, maxDist, 0.001)
+}
+func (ctx *TestAppCtx) Title() string {
+	return fmt.Sprintf(
+		"LeftClick (%d, %d), RightClick (%d, %d) [%.02f FPS]",
+		ctx.LeftClick.X, ctx.LeftClick.Y, ctx.RightClick.X, ctx.RightClick.Y, ebiten.ActualFPS(),
+	)
 }
 
 func (ctx *TestAppCtx) DrawAtF32(target, image *ebiten.Image, ox, oy float32) {
@@ -90,7 +97,7 @@ func (app *TestApp) Update() error {
 			app.RightClick = image.Pt(x, y)
 		}
 	}
-	ebiten.SetWindowTitle(fmt.Sprintf("LeftClick (%d, %d), RightClick (%d, %d) [%.02f FPS]", app.LeftClick.X, app.LeftClick.Y, app.RightClick.X, app.RightClick.Y, ebiten.ActualFPS()))
+	ebiten.SetWindowTitle(app.Title())
 	return app.BaseTestApp.Update()
 }
 

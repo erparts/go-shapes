@@ -75,3 +75,14 @@ func parallelsAtDist(a, b, c float64, dist float64) (float64, float64) {
 	shift := dist * norm
 	return c - shift, c + shift
 }
+
+func snapEdges[Float ~float32 | ~float64](value, min, max, tolerance Float) Float {
+	switch {
+	case value+tolerance > max:
+		return max
+	case value-tolerance < min:
+		return min
+	default:
+		return value
+	}
+}
