@@ -66,6 +66,23 @@ func TestMaskHorz(t *testing.T) {
 	}
 }
 
+// go test -run ^TestMaskCircle$ . -count 1
+func TestMaskCircle(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		canvas.Fill(color.Black)
+		w, h := rectSizeF32(canvas.Bounds())
+		hardRadius := 48.0 + float32(ctx.DistAnim(16.0, 0.25))
+		softEdge := float32(ctx.DistAnim(16.0, 1.0))
+		ctx.Renderer.MaskCircle(canvas, ctx.Images[0], w/2, h/2, 0, 0, hardRadius, softEdge)
+	})
+
+	rect := app.Renderer.NewRect(360, 360)
+	app.Images = append(app.Images, rect)
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
+
 // go test -run ^TestMaskThreshold$ . -count 1
 func TestMaskThreshold(t *testing.T) {
 	const Size = 256

@@ -75,21 +75,32 @@ func (r *Renderer) MaskHorz(target, source *ebiten.Image, x, y, inX, outX float3
 	r.DrawShaderAt(target, source, x, y, 0, 0, shaderMaskHorz)
 }
 
-func (r *Renderer) MaskCircle(target, source *ebiten.Image, cx, cy float32, hardRadius, softRadius float32) {
-	if softRadius < 0.0 {
-		hardRadius += softRadius
-		softRadius = -softRadius
+// MaskCircle draws 'source' into 'target', centered at (cx + srcOffsetX, cy + srcOffset),
+// but filtering out pixels beyond a distance of hardRadius + softEdge from (cx, cy).
+func (r *Renderer) MaskCircle(target, source *ebiten.Image, cx, cy, srcOffsetX, srcOffsetY, hardRadius, softEdge float32) {
+	if softEdge < 0.0 {
+		hardRadius += softEdge
+		softEdge = -softEdge
 	}
 	if hardRadius < 0.0 {
 		hardRadius = 0.0
 	}
-	if hardRadius == 0.0 && softRadius == 0.0 {
+	if hardRadius == 0.0 && softEdge == 0.0 {
 		return // omit draw, nothing to draw
 	}
 
-	// ... pass squared distances
+	srcOX, srcOY, srcWidthF32, srcHeightF32 := rectOriginSizeF32(source.Bounds())
+	ox, oy := cx-srcWidthF32/2.0+srcOffsetX, cy-srcHeightF32/2.0+srcOffsetY
+	dstOX, dstOY := rectOriginF32(target.Bounds())
+	dstOX, dstOY = dstOX+ox, dstOY+oy
+	r.setDstRectCoords(dstOX, dstOY, dstOX+srcWidthF32, dstOY+srcHeightF32)
+	r.setSrcRectCoords(srcOX, srcOY, srcOX+srcWidthF32, srcOY+srcHeightF32)
+
+	r.opts.Images[0] = source
+	r.setFlatCustomVAs(cx, cy, hardRadius, softEdge)
 	ensureShaderMaskCircleLoaded()
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderMaskCircle, &r.opts)
+	r.opts.Images[0] = nil
 }
 
 // Related to DrawAlphaMaskCirc

@@ -3,11 +3,9 @@ package main
 
 func Fragment(targetCoords vec4, sourceCoords vec2, _ vec4, customVAs vec4) vec4 {
 	srcColor := imageSrc0UnsafeAt(sourceCoords)
-	refX := targetCoords.x - imageDstOrigin().x
-	inX, outX := customVAs[0], customVAs[1]
-	if inX <= outX { // fade out towards the right
-		return srcColor * (1.0 - smoothstep(inX, outX, refX))
-	} else { // fade out towards the left
-		return srcColor * smoothstep(outX, inX, refX)
-	}
+	relCoords := targetCoords.xy - imageDstOrigin()
+	origin := customVAs.xy
+	hardRadius, softEdge := customVAs[2], customVAs[3]
+	dist := distance(relCoords, origin)
+	return srcColor * (1.0 - smoothstep(hardRadius, hardRadius+softEdge, dist))
 }
