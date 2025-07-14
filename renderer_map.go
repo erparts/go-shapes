@@ -73,6 +73,9 @@ func quadCenter(quad [4]PointF32) PointF32 {
 // if you are not targeting powerful devices.
 //
 // quad must be given in clockwise order starting from top-left.
+//
+// The renderer's color is applied multiplicatively as a color scale;
+// set it to white for neutral operation.
 func (r *Renderer) MapProjective(target, source *ebiten.Image, quad [4]PointF32) {
 	uvQuad := [4]PointF32{{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 1, Y: 1}, {X: 0, Y: 1}}
 	homography := computeHomography(quad, uvQuad)
