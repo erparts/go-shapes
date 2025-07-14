@@ -4,10 +4,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-type PointF32 struct {
-	X, Y float32
-}
-
 // quad must be given in clockwise order starting from top-left.
 func (r *Renderer) mapQuad2(target, source *ebiten.Image, quad [4]PointF32) {
 	for i, pt := range quad {
@@ -30,6 +26,9 @@ func (r *Renderer) mapQuad2(target, source *ebiten.Image, quad [4]PointF32) {
 // enough in some cases. Otherwise, consider [Renderer.MapProjective]().
 //
 // quad must be given in clockwise order starting from top-left.
+//
+// The renderer's color is applied multiplicatively as a color scale;
+// set it to white for neutral operation.
 func (r *Renderer) MapQuad4(target, source *ebiten.Image, quad [4]PointF32) {
 	for i, pt := range quad {
 		r.vertices[i].DstX = pt.X
@@ -48,14 +47,14 @@ func (r *Renderer) MapQuad4(target, source *ebiten.Image, quad [4]PointF32) {
 	r.setSrcRectCoords(minX, minY, minX+srcWidth, minY+srcHeight)
 	r.setFlatCustomVAs01(1.0, 1.0)
 	r.opts.Images[0] = source
-	ensureShaderBilinearLoaded()
+	ensureShaderMapQuad4Loaded()
 	indices := []uint16{
 		0, 1, 4,
 		1, 2, 4,
 		2, 3, 4,
 		3, 0, 4,
 	}
-	target.DrawTrianglesShader(r.vertices[:], indices, shaderBilinear, &r.opts)
+	target.DrawTrianglesShader(r.vertices[:], indices, shaderMapQuad4, &r.opts)
 	r.opts.Images[0] = nil
 	r.vertices = r.vertices[:4]
 }
