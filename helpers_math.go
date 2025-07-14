@@ -154,3 +154,53 @@ func computeHomography(fromQuad, toQuad [4]PointF32) [9]float32 {
 	homography[8] = 1.0
 	return homography
 }
+
+// quad points must be given in clockwise order, +y axis goes down
+func expandQuad(quad [4]PointF32, thickness float32) [4]PointF32 {
+	if thickness == 0 {
+		return quad
+	}
+
+	// edges
+	e0 := quad[1].Sub(quad[0])
+	e1 := quad[2].Sub(quad[1])
+	e2 := quad[3].Sub(quad[2])
+	e3 := quad[0].Sub(quad[3])
+
+	// normals
+	n0 := PointF32{X: e0.Y, Y: -e0.X}.Normalize().Scale(thickness)
+	n1 := PointF32{X: e1.Y, Y: -e1.X}.Normalize().Scale(thickness)
+	n2 := PointF32{X: e2.Y, Y: -e2.X}.Normalize().Scale(thickness)
+	n3 := PointF32{X: e3.Y, Y: -e3.X}.Normalize().Scale(thickness)
+
+	// offset points
+	p0a := quad[0].Add(n0)
+	p1a := quad[1].Add(n1)
+	p2a := quad[2].Add(n2)
+	p3a := quad[3].Add(n3)
+
+	// final intersection
+	out := [4]PointF32{
+		lineIntersect(p3a, e3, p0a, e0),
+		lineIntersect(p0a, e0, p1a, e1),
+		lineIntersect(p1a, e1, p2a, e2),
+		lineIntersect(p2a, e2, p3a, e3),
+	}
+	return out
+}
+
+// returns the intersection of p1 + t·d1 and p2 + u·d2 (two lines in
+// parametric form: point + direction)
+func lineIntersect(p1, d1, p2, d2 PointF32) PointF32 {
+	// p1 + t*d1 = p2 + s*d2 => solve for t
+	det := d1.X*d2.Y - d1.Y*d2.X
+	if math.Abs(float64(det)) < 1e-6 {
+		return p1.Add(p2).Scale(0.5) // ~parallel lines, return midpoint
+	}
+
+	t := ((p2.X-p1.X)*d2.Y - (p2.Y-p1.Y)*d2.X) / det
+	return PointF32{
+		X: p1.X + d1.X*t,
+		Y: p1.Y + d1.Y*t,
+	}
+}
