@@ -36,6 +36,9 @@ var shaderTriangleSrc []byte
 //go:embed shaders/hexagon.kage
 var shaderHexagonSrc []byte
 
+//go:embed shaders/quad.kage
+var shaderQuadSrc []byte
+
 //go:embed shaders/alpha_mask_circ.kage
 var shaderAlphaMaskCircSrc []byte
 
@@ -126,6 +129,9 @@ var shaderDitherMat4Src []byte
 //go:embed shaders/map_projective.kage
 var shaderMapProjectiveSrc []byte
 
+//go:embed shaders/map_quad4.kage
+var shaderMapQuad4Src []byte
+
 //go:embed shaders/warp_barrel.kage
 var shaderWarpBarrelSrc []byte
 
@@ -166,6 +172,7 @@ var shaderRing *ebiten.Shader
 var shaderEllipse *ebiten.Shader
 var shaderTriangle *ebiten.Shader
 var shaderHexagon *ebiten.Shader
+var shaderQuad *ebiten.Shader
 var shaderAlphaMaskCirc *ebiten.Shader
 var shaderMask *ebiten.Shader
 var shaderMaskAt *ebiten.Shader
@@ -195,6 +202,7 @@ var shaderGradientRadial *ebiten.Shader
 var shaderOklabShift *ebiten.Shader
 var shaderColorMix *ebiten.Shader
 var shaderDitherMat4 *ebiten.Shader
+var shaderMapQuad4 *ebiten.Shader
 var shaderMapProjective *ebiten.Shader
 var shaderWarpBarrel *ebiten.Shader
 var shaderNoise *ebiten.Shader
@@ -273,6 +281,12 @@ func ensureShaderTriangleLoaded() {
 func ensureShaderHexagonLoaded() {
 	if shaderHexagon == nil {
 		shaderHexagon = mustCompile(shaderHexagonSrc)
+	}
+}
+
+func ensureShaderQuadLoaded() {
+	if shaderQuad == nil {
+		shaderQuad = mustCompile(shaderQuadSrc)
 	}
 }
 
@@ -447,6 +461,12 @@ func ensureShaderColorMixLoaded() {
 func ensureShaderDitherMat4Loaded() {
 	if shaderDitherMat4 == nil {
 		shaderDitherMat4 = mustCompile(shaderDitherMat4Src)
+	}
+}
+
+func ensureShaderMapQuad4Loaded() {
+	if shaderMapQuad4 == nil {
+		shaderMapQuad4 = mustCompile(shaderMapQuad4Src)
 	}
 }
 

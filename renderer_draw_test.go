@@ -168,3 +168,45 @@ func TestDrawRing(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// go test -run ^TestDrawQuad$ . -count 1
+func TestDrawQuad(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		lx, ly := ctx.LeftClickF32()
+		rx, ry := ctx.RightClickF32()
+
+		w, h := rectSizeF32(canvas.Bounds())
+		quad := [4]PointF32{
+			{X: lx, Y: ly},
+			{X: w/2.0 + w/4.0, Y: h/2.0 - h/4.0},
+			{X: rx, Y: ry},
+			{X: w/2.0 - w/4.0, Y: h/2.0 + h/4.0},
+		}
+		thickening := float32(ctx.DistAnim(48.0, 1.0))
+		ctx.Renderer.DrawQuad(canvas, quad, thickening)
+	})
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// go test -run ^TestDrawQuadSoft$ . -count 1
+func TestDrawQuadSoft(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		lx, ly := ctx.LeftClickF32()
+		rx, ry := ctx.RightClickF32()
+
+		w, h := rectSizeF32(canvas.Bounds())
+		quad := [4]PointF32{
+			{X: lx, Y: ly},
+			{X: w/2.0 + w/4.0, Y: h/2.0 - h/4.0},
+			{X: rx, Y: ry},
+			{X: w/2.0 - w/4.0, Y: h/2.0 + h/4.0},
+		}
+		thickening := float32(ctx.DistAnim(48.0, 1.0))
+		ctx.Renderer.DrawQuadSoft(canvas, quad, thickening, 64.0)
+	})
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}

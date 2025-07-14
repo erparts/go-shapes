@@ -286,8 +286,8 @@ func (r *Renderer) strokeInnerArea(target *ebiten.Image, ox, oy, w, h, inThickne
 }
 
 // DrawTriangle draws a smooth triangle using the given vertices and an optional rounding factor.
-// Notice that, if provided, handling the rounding is relatively expensive (two dozen f64 products
-// and 3 square roots).
+// Notice that, if provided, handling the rounding is relatively non-trivial (two dozen f64 products
+// and 3 square roots for CPU-side precomputations).
 func (r *Renderer) DrawTriangle(target *ebiten.Image, ox1, oy1, ox2, oy2, ox3, oy3, rounding float64) {
 	r.drawTriangle(target, ox1, oy1, ox2, oy2, ox3, oy3, 0.0, rounding)
 }
@@ -353,4 +353,31 @@ func (r *Renderer) DrawHexagon(target *ebiten.Image, ox, oy, radius, roundness, 
 	r.opts.Uniforms["Roundness"] = roundness
 	ensureShaderHexagonLoaded()
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderHexagon, &r.opts)
+}
+
+// DrawQuad renders a convex quad with the current renderer colors.
+// The thickening acts as a rounding parameter, but it extends the shape outwards
+// instead of "cutting" the corners. Notice that non-zero thickening involves
+// additional CPU-side precomputations.
+//
+// quad must be given in clockwise order starting from top-left.
+func (r *Renderer) DrawQuad(target *ebiten.Image, quad [4]PointF32, thickening float32) {
+	r.DrawQuadSoft(target, quad, thickening, 1.3333)
+}
+
+func (r *Renderer) DrawQuadSoft(target *ebiten.Image, quad [4]PointF32, thickening, softEdge float32) {
+	minX, minY, _, _ := rectOriginSizeF32(target.Bounds())
+	for i, pt := range expandQuad(quad, thickening) {
+		r.vertices[i].DstX = minX + pt.X
+		r.vertices[i].DstY = minY + pt.Y
+	}
+
+	r.setFlatCustomVAs01(thickening, softEdge)
+	ensureShaderQuadLoaded()
+	r.opts.Uniforms["Quad"] = [8]float32{
+		quad[0].X, quad[0].Y, quad[1].X, quad[1].Y,
+		quad[2].X, quad[2].Y, quad[3].X, quad[3].Y,
+	}
+	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderQuad, &r.opts)
+	clear(r.opts.Uniforms)
 }
