@@ -90,11 +90,135 @@ func (r *Renderer) DrawCircle(target *ebiten.Image, cx, cy, radius float32) {
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderCircle, &r.opts)
 }
 
+// DrawRing draws a smooth ring at the given position. For ring segments
+// with start and end angles, see [Renderer.DrawRingSector]() instead.
 func (r *Renderer) DrawRing(target *ebiten.Image, cx, cy, inRadius, outRadius float32) {
+	if inRadius >= outRadius {
+		return // skip empty draws
+	}
 	r.setDstRectCoords(cx-outRadius, cy-outRadius, cx+outRadius, cy+outRadius)
 	ensureShaderRingLoaded()
 	r.setFlatCustomVAs(cx, cy, outRadius, inRadius)
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderRing, &r.opts)
+}
+
+// DrawRingSector draws a smooth ring segment. See [RadsRight] constants for
+// angle conventions and docs.
+//
+// Only outer rounding is supported at the moment.
+func (r *Renderer) DrawRingSector(target *ebiten.Image, cx, cy, inRadius, outRadius float32, startRads, endRads float64, rounding float32) {
+	if inRadius >= outRadius || outRadius < 0 || startRads == endRads {
+		return // skip empty draws
+	}
+	if inRadius <= 0 {
+		r.DrawCircle(target, cx, cy, outRadius)
+	}
+	if endRads >= startRads+2*math.Pi {
+		r.DrawRing(target, cx, cy, inRadius, outRadius)
+	}
+
+	startRads, endRads = normURads(startRads), normURads(endRads)
+	r.internalDrawRingSector(target, cx, cy, inRadius, outRadius, startRads, endRads, rounding)
+}
+
+// precondition: angles are normalized to [0, 2*pi)
+func (r *Renderer) internalDrawRingSector(target *ebiten.Image, cx, cy, inRadius, outRadius float32, startRads, endRads float64, rounding float32) {
+	pieMinX, pieMinY, pieMaxX, pieMaxY := ringSectorBounds(cx, cy, inRadius, outRadius, startRads, endRads)
+	if rounding != 0 {
+		r := abs(rounding)
+		pieMinX -= r
+		pieMinY -= r
+		pieMaxX += r
+		pieMaxY += r
+	}
+
+	dstOX, dstOY := rectOriginF32(target.Bounds())
+	r.vertices[0].DstX = dstOX + pieMinX
+	r.vertices[0].DstY = dstOY + pieMinY
+	r.vertices[1].DstX = dstOX + pieMaxX
+	r.vertices[1].DstY = dstOY + pieMinY
+	r.vertices[2].DstX = dstOX + pieMaxX
+	r.vertices[2].DstY = dstOY + pieMaxY
+	r.vertices[3].DstX = dstOX + pieMinX
+	r.vertices[3].DstY = dstOY + pieMaxY
+
+	ensureShaderRingSectorLoaded()
+	delta := uradsDeltaCW(startRads, endRads)
+	centerDir := uradsAddCW(startRads, delta/2.0)
+	ws, wc := math.Sincos(delta / 2.0)
+	r.opts.Uniforms["WedgeNormal"] = [2]float32{float32(ws), float32(wc)}
+	r.opts.Uniforms["InRadius"] = inRadius
+	r.opts.Uniforms["Rounding"] = rounding
+	r.setFlatCustomVAs(cx, cy, float32(centerDir), outRadius)
+	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderRingSector, &r.opts)
+	clear(r.opts.Uniforms)
+}
+
+// DrawPie draws circular sector defined by (startRads, endRads).
+// See [RadsRight] constants for angle conventions and docs.
+//
+// Some examples:
+//   - startRads = RadsRight, endRads = RadsBottom will draw the bottom-right quarter circle pie.
+//   - startRads = RadsBottom, endRads = RadsRight will draw a pie missing the bottom-right quarter.
+//
+// Notice that the rounding parameter doesn't expand the shape beyond the radius, but it does expand
+// the flat faces of the pie.
+func (r *Renderer) DrawPie(target *ebiten.Image, cx, cy, radius float32, startRads, endRads float64, rounding float32) {
+	if startRads == endRads || radius < 0 {
+		return // empty
+	}
+	if endRads >= startRads+2*math.Pi {
+		r.DrawCircle(target, cx, cy, radius)
+		return // full circle
+	}
+	startRads, endRads = normURads(startRads), normURads(endRads)
+	delta := uradsDeltaCW(startRads, endRads)
+	centerDir := uradsAddCW(startRads, delta/2.0)
+	r.internalDrawPieRate(target, cx, cy, radius, centerDir, startRads, endRads, float64(delta)/(2*math.Pi), rounding)
+}
+
+// DrawPieRate is similar to DrawPie, but using a single direction for the center of the pie
+// slice and a rate value between (0, 1), with 0 being empty pie and 1 being completely filled.
+// See [RadsRight] constants for angle conventions and docs.
+func (r *Renderer) DrawPieRate(target *ebiten.Image, cx, cy, radius float32, centerDir, rate float64, rounding float32) {
+	if rate <= 0 || radius < 0 {
+		return // empty
+	}
+	if rate > 1.0 {
+		r.DrawCircle(target, cx, cy, radius)
+		return // full circle
+	}
+
+	ratePi := rate * math.Pi
+	startRads, endRads := uradsAddCW(centerDir, ratePi), uradsAddCW(centerDir, ratePi)
+	r.internalDrawPieRate(target, cx, cy, radius, centerDir, startRads, endRads, rate, rounding)
+}
+
+// preconditions: 0 < rate < 1.0, centerDir, startRads, endRads and rate are consistent
+func (r *Renderer) internalDrawPieRate(target *ebiten.Image, cx, cy, radius float32, centerDir, startRads, endRads, rate float64, rounding float32) {
+	pieMinX, pieMinY, pieMaxX, pieMaxY := pieBounds(cx, cy, radius, startRads, endRads)
+	pieMinX -= rounding
+	pieMinY -= rounding
+	pieMaxX += rounding
+	pieMaxY += rounding
+
+	dstOX, dstOY := rectOriginF32(target.Bounds())
+	r.vertices[0].DstX = dstOX + pieMinX
+	r.vertices[0].DstY = dstOY + pieMinY
+	r.vertices[1].DstX = dstOX + pieMaxX
+	r.vertices[1].DstY = dstOY + pieMinY
+	r.vertices[2].DstX = dstOX + pieMaxX
+	r.vertices[2].DstY = dstOY + pieMaxY
+	r.vertices[3].DstX = dstOX + pieMinX
+	r.vertices[3].DstY = dstOY + pieMaxY
+
+	ensureShaderPieLoaded()
+	ws, wc := math.Sincos(rate * math.Pi)
+	r.opts.Uniforms["WedgeNormal"] = [2]float32{float32(ws), float32(wc)}
+	r.opts.Uniforms["Rounding"] = rounding
+	r.setFlatCustomVAs(cx, cy, float32(normURads(centerDir)), radius)
+	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderPie, &r.opts)
+	clear(r.opts.Uniforms)
 }
 
 // Notice: ellipses don't have a perfect SDF, so approximations can be very slightly
@@ -105,7 +229,7 @@ func (r *Renderer) DrawEllipse(target *ebiten.Image, cx, cy, horzRadius, vertRad
 		r.opts.Uniforms["Radians"] = 0
 	} else {
 		hRadiusF64, vRadiusF64 := float64(horzRadius), float64(vertRadius)
-		rc, rs := math.Cos(rads), math.Sin(rads)
+		rs, rc := math.Sincos(rads)
 		halfWidth := float32(math.Hypot(hRadiusF64*rc, vRadiusF64*rs))
 		halfHeight := float32(math.Hypot(hRadiusF64*rs, vRadiusF64*rc))
 		r.setDstRectCoords(cx-halfWidth, cy-halfHeight, cx+halfWidth, cy+halfHeight)

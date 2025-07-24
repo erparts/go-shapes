@@ -41,6 +41,24 @@ func lerp[Float float32 | float64](a, b, t Float) Float {
 	return a + t*(b-a)
 }
 
+// umod returns the non-negative remainder of x mod m, similar
+// to rust's [rem_euclid]. This is often used in the package for
+// normalizing angles.
+//
+// [rem_euclid]: https://doc.rust-lang.org/std/primitive.f64.html#method.rem_euclid
+func umod(x, m float64) float64 {
+	r := math.Mod(x, m)
+	if r < 0 {
+		r += m
+	}
+	return r
+}
+
+// normURads calls [umod](r, 2*math.Pi) to normalize r to [0, 2*pi) range.
+func normURads(r float64) float64 {
+	return umod(r, 2*math.Pi)
+}
+
 // Notice: geometry code is derived from etxt@v0.0.8 emask/helper_funcs.go
 
 // Given two points of a line, it returns its A, B and C
@@ -203,4 +221,82 @@ func lineIntersect(p1, d1, p2, d2 PointF32) PointF32 {
 		X: p1.X + d1.X*t,
 		Y: p1.Y + d1.Y*t,
 	}
+}
+
+// precondition: angles must be normalized by normURads
+func pieBounds(cx, cy float32, radius float32, startRads, endRads float64) (minX, minY, maxX, maxY float32) {
+	ss, sc := math.Sincos(startRads)
+	es, ec := math.Sincos(endRads)
+	ss32, sc32, es32, ec32 := float32(ss), float32(sc), float32(es), float32(ec)
+	p1x, p1y := cx+radius*sc32, cy+radius*ss32
+	p2x, p2y := cx+radius*ec32, cy+radius*es32
+	minX, minY = min(cx, p1x, p2x), min(cy, p1y, p2y)
+	maxX, maxY = max(cx, p1x, p2x), max(cy, p1y, p2y)
+	if uradsWithinCW(RadsRight, startRads, endRads) {
+		maxX = cx + radius
+	}
+	if uradsWithinCW(RadsBottom, startRads, endRads) {
+		maxY = cy + radius
+	}
+	if uradsWithinCW(RadsLeft, startRads, endRads) {
+		minX = cx - radius
+	}
+	if uradsWithinCW(RadsTop, startRads, endRads) {
+		minY = cy - radius
+	}
+	return minX, minY, maxX, maxY
+}
+
+// precondition: angles must be normalized by normURads, outRadius >= inRadius
+func ringSectorBounds(cx, cy float32, inRadius, outRadius float32, startRads, endRads float64) (minX, minY, maxX, maxY float32) {
+	ss, sc := math.Sincos(startRads)
+	es, ec := math.Sincos(endRads)
+	ss32, sc32, es32, ec32 := float32(ss), float32(sc), float32(es), float32(ec)
+	pi1x, pi1y := cx+inRadius*sc32, cy+inRadius*ss32
+	po1x, po1y := cx+outRadius*sc32, cy+outRadius*ss32
+	pi2x, pi2y := cx+inRadius*ec32, cy+inRadius*es32
+	po2x, po2y := cx+outRadius*ec32, cy+outRadius*es32
+	minX, minY = min(pi1x, po1x, pi2x, po2x), min(pi1y, po1y, pi2y, po2y)
+	maxX, maxY = max(pi1x, po1x, pi2x, po2x), max(pi1y, po1y, pi2y, po2y)
+
+	if uradsWithinCW(RadsRight, startRads, endRads) {
+		maxX = cx + outRadius
+	}
+	if uradsWithinCW(RadsBottom, startRads, endRads) {
+		maxY = cy + outRadius
+	}
+	if uradsWithinCW(RadsLeft, startRads, endRads) {
+		minX = cx - outRadius
+	}
+	if uradsWithinCW(RadsTop, startRads, endRads) {
+		minY = cy - outRadius
+	}
+	return minX, minY, maxX, maxY
+}
+
+// uradsWithinCW returns whether 'rads' is within the clockwise segment [start, end],
+// assumming that all angles are normalized in the [0, 2*pi) range (e.g. normURads)
+func uradsWithinCW[Float ~float32 | ~float64](rads, start, end Float) bool {
+	if start < end {
+		return rads >= start && rads <= end
+	}
+	return rads >= start || rads <= end
+}
+
+func uradsDeltaCW[Float ~float32 | ~float64](start, end Float) Float {
+	if end >= start {
+		return end - start
+	}
+	return 2*math.Pi - start + end
+}
+
+// precondition: start is in [0, 2*pi) range, delta is in (-2*pi, 2*pi) range
+func uradsAddCW[Float ~float32 | ~float64](start, delta Float) Float {
+	total := start + delta
+	if total > 2*math.Pi {
+		total -= 2 * math.Pi
+	} else if total < 0 {
+		total += 2 * math.Pi
+	}
+	return total
 }

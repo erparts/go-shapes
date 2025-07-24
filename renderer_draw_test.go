@@ -2,6 +2,7 @@ package shapes
 
 import (
 	"image/color"
+	"math"
 	"testing"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -163,6 +164,41 @@ func TestDrawRing(t *testing.T) {
 
 		ctx.Renderer.SetColorF32(0.5, 0.5, 0.5, 0.5)
 		ctx.Renderer.DrawCircle(canvas, rx, ry, 48.0)
+	})
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// go test -run ^TestDrawRingSector$ . -count 1
+func TestDrawRingSector(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		w, h := rectSizeF32(canvas.Bounds())
+		cx, cy := w/2.0, h/2.0
+		startRads := ctx.ModAnim(2*math.Pi, 1.0)
+		endRads := startRads + 0.4 + ctx.DistAnim(1.6, 1.0)
+		ctx.Renderer.SetColorF32(1.0, 1.0, 1.0, 1.0)
+		ctx.Renderer.DrawRingSector(canvas, cx, cy, 48, 128, startRads, endRads, 0.0)
+		ctx.Renderer.SetColorF32(0.0, 0.5, 0.5, 0.5)
+		ctx.Renderer.DrawRingSector(canvas, cx, cy, 48, 128, startRads, endRads, 8.0)
+	})
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// go test -run ^TestDrawPie$ . -count 1
+func TestDrawPie(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		w, h := rectSizeF32(canvas.Bounds())
+		cx, cy := w/2.0, h/2.0
+		rate := -0.01 + ctx.DistAnim(1.02, 1.0)
+
+		ctx.Renderer.SetColorF32(1.0, 1.0, 1.0, 1.0)
+		ctx.Renderer.DrawPieRate(canvas, cx, cy, 96.0, RadsRight, rate, 6.0)
+
+		ctx.Renderer.SetColorF32(0.0, 1.0, 0.0, 1.0)
+		ctx.Renderer.DrawPie(canvas, cx, cy, 64.0, RadsRight+rate, RadsBottom, 3.0)
 	})
 	if err := ebiten.RunGame(app); err != nil {
 		t.Fatal(err)
