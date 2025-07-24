@@ -51,7 +51,7 @@ func TestGradient(t *testing.T) {
 
 		ox, oy := 50, 400
 		sub := canvas.SubImage(image.Rect(ox, oy, ox+80, oy+60)).(*ebiten.Image)
-		ctx.Renderer.SimpleGradient(sub, color.RGBA{0, 255, 0, 255}, color.RGBA{0, 0, 255, 255}, 0)
+		ctx.Renderer.SimpleGradient(sub, color.RGBA{0, 255, 0, 255}, color.RGBA{0, 0, 255, 255}, DirRadsBRTL)
 	})
 
 	rectA := app.Renderer.NewRect(120, 80)

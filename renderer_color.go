@@ -8,19 +8,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// Direction constants for use with gradient generation functions.
-const (
-	DirRadsLTR float32 = 0.0          // left to right
-	DirRadsRTL float32 = math.Pi      // right to left
-	DirRadsTTB float32 = math.Pi / 2  // top to bottom
-	DirRadsBTT float32 = -math.Pi / 2 // bottom to top
-
-	DirRadsTLBR float32 = math.Pi / 4      // top-left to bottom-right
-	DirRadsBLTR float32 = -math.Pi / 4     // bottmo-left to top-right
-	DirRadsTRBL float32 = 3 * math.Pi / 4  // top-right to bottom-left
-	DirRadsBRTL float32 = -3 * math.Pi / 4 // bottom-right to top-left
-)
-
 func (r *Renderer) NewSimpleGradient(w, h int, from, to color.RGBA, dirRadians float32) *ebiten.Image {
 	img := ebiten.NewImage(w, h)
 	r.SimpleGradient(img, from, to, dirRadians)
