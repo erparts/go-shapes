@@ -96,6 +96,47 @@ func TestGradientRadial(t *testing.T) {
 	}
 }
 
+// go test -run ^TestColorizeByLightness$ . -count 1
+func TestColorizeByLightness(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		canvas.Fill(color.Black)
+
+		cw, ch := rectSizeF32(canvas.Bounds())
+		iw, ih := rectSizeF32(ctx.Images[0].Bounds())
+		x, y := (cw-iw)/2.0, (ch-ih)/2.0
+		from, to := color.RGBA{0, 196, 196, 255}, color.RGBA{255, 0, 255, 255}
+		curveFactor := float32(0.75 + ctx.DistAnim(1.75, 1.0))
+		if ebiten.IsKeyPressed(ebiten.KeySpace) {
+			ctx.DrawAtF32(canvas, ctx.Images[0], x, y)
+		} else {
+			var thresA, thresB float32 = 0.0, 1.0
+			ctx.Renderer.ColorizeByLightness(canvas, ctx.Images[0], x, y, from, to, thresA, thresB, 7, curveFactor)
+		}
+	})
+
+	const Radius = 48
+	base := app.Renderer.NewSimpleGradient(Radius*8, Radius*8, color.RGBA{0, 0, 0, 255}, color.RGBA{255, 255, 255, 255}, DirRadsTLBR)
+	app.Renderer.Noise(base, 0.1, 26.26, 0.0)
+	app.Renderer.SetColorF32(1.0, 0.0, 1.0, 1.0, 0, 3)
+	app.Renderer.SetColorF32(0.5, 0.0, 0.0, 1.0, 1, 2)
+	app.Renderer.DrawCircle(base, Radius*2, Radius*4, Radius)
+	app.Renderer.SetColorF32(0.0, 1.0, 1.0, 1.0, 0, 3)
+	app.Renderer.SetColorF32(0.5, 0.0, 0.0, 1.0, 1, 2)
+	app.Renderer.DrawCircle(base, Radius*6, Radius*4, Radius)
+	app.Renderer.SetColorF32(1.0, 1.0, 0.0, 1.0, 0, 3)
+	app.Renderer.SetColorF32(0.5, 0.0, 0.0, 1.0, 1, 2)
+	app.Renderer.DrawCircle(base, Radius*4, Radius*2, Radius)
+	app.Renderer.SetColorF32(0.0, 1.0, 0.0, 1.0, 0, 3)
+	app.Renderer.SetColorF32(0.5, 0.0, 0.0, 1.0, 1, 2)
+	app.Renderer.DrawCircle(base, Radius*4, Radius*6, Radius)
+
+	app.Renderer.SetColorF32(1.0, 1.0, 1.0, 1.0)
+	app.Images = append(app.Images, base)
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
+
 // go test -run ^TestOklabShift . -count 1
 func TestOklabShift(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {

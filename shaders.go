@@ -123,6 +123,9 @@ var shaderGradientSrc []byte
 //go:embed shaders/gradient_radial.kage
 var shaderGradientRadialSrc []byte
 
+//go:embed shaders/colorize_lightness.kage
+var shaderColorizeByLightnessSrc []byte
+
 //go:embed shaders/oklab_shift.kage
 var shaderOklabShiftSrc []byte
 
@@ -207,6 +210,7 @@ var shaderScanlinesSharp *ebiten.Shader
 var shaderFlatPaint *ebiten.Shader
 var shaderGradient *ebiten.Shader
 var shaderGradientRadial *ebiten.Shader
+var shaderColorizeByLightness *ebiten.Shader
 var shaderOklabShift *ebiten.Shader
 var shaderColorMix *ebiten.Shader
 var shaderDitherMat4 *ebiten.Shader
@@ -463,6 +467,12 @@ func ensureShaderGradientLoaded() {
 func ensureShaderGradientRadialLoaded() {
 	if shaderGradientRadial == nil {
 		shaderGradientRadial = mustCompile(shaderGradientRadialSrc)
+	}
+}
+
+func ensureShaderColorizeByLightnessLoaded() {
+	if shaderColorizeByLightness == nil {
+		shaderColorizeByLightness = mustCompile(shaderColorizeByLightnessSrc)
 	}
 }
 

@@ -171,6 +171,29 @@ func (r *Renderer) OklabShift(target, source *ebiten.Image, x, y, lightnessShift
 	r.DrawShaderAt(target, source, x, y, 0, 0, shaderOklabShift)
 }
 
+// ColorizeByLightness draws source into target at the given (x, y), taking the
+// lightness of each source pixel and remapping it to a color between 'from' and 'to'.
+//
+// Key parameters:
+//   - fromLightness: pixels below this threshold take 'from' color.
+//     Expected range: [0.0, 1.0]
+//   - toLightness: pixels above this threshold take 'to' color.
+//     Expected range: [0.0, 1.0].
+//   - steps: number of color steps in the gradient. Use steps <= 0 for a continuous gradient.
+//   - curveFactor: adjusts the gradient's interpolation curve; use 1.0 for linear,
+//     <= 1.0 to bias towards 'from', > 1.0 to bias towards 'to'. Recommended
+//     range: [0.2, 5.0].
+func (r *Renderer) ColorizeByLightness(target, source *ebiten.Image, x, y float32, from, to color.RGBA, fromLightness, toLightness float32, steps int, curveFactor float32) {
+	ensureShaderColorizeByLightnessLoaded()
+	fromF64, toF64 := colorToF64(from), colorToF64(to)
+	fromOklab, toOklab := rgbToOklab([3]float64(fromF64[:3])), rgbToOklab([3]float64(toF64[:3]))
+	r.opts.Uniforms["From"] = [4]float32{float32(fromOklab[0]), float32(fromOklab[1]), float32(fromOklab[2]), float32(fromF64[3])}
+	r.opts.Uniforms["To"] = [4]float32{float32(toOklab[0]), float32(toOklab[1]), float32(toOklab[2]), float32(toF64[3])}
+	r.setFlatCustomVAs(fromLightness, toLightness, float32(steps), curveFactor)
+	r.DrawShaderAt(target, source, x, y, 0, 0, shaderColorizeByLightness)
+	clear(r.opts.Uniforms)
+}
+
 // ColorMix draws 'base' and 'over' to 'target' using the mix() function
 // for color mixing instead of BlendSourceOver or other standard composition
 // operations. This is useful to interpolate color transitions or other image
