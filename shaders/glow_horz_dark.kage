@@ -12,7 +12,7 @@ func Fragment(targetCoords vec4, sourceCoords vec2, color vec4, customVAs vec4) 
 	endThreshold := customVAs[2]
 
 	srcCoords := floor(sourceCoords) + vec2(0.5)
-	sigma := radius / 3.0
+	sigma := max(radius, 0.001) / 3.0
 	sigma2 := 2.0 * sigma * sigma
 	halfRadius := radius / 2.0
 	accColor := vec4(0.0)

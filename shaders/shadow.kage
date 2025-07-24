@@ -6,7 +6,7 @@ func Fragment(targetCoords vec4, sourceCoords vec2, color vec4, customVAs vec4) 
 
 	shadowOffset := customVAs.xy
 	radius := customVAs.z
-	sigma := radius / 3.0
+	sigma := max(radius, 0.001) / 3.0
 	sigma2 := 2.0 * sigma * sigma
 	halfRadius := radius / 2.0
 	accColor := vec4(0.0)
@@ -37,7 +37,7 @@ func Fragment(targetCoords vec4, sourceCoords vec2, color vec4, customVAs vec4) 
 	}
 
 	out := color * (accColor.a / accWeight)
-	return out // + (1-out.a)*vec4(0.5, 0, 0.5, 0.5)
+	return out
 }
 
 func GetSource0ClampCoords(clamping int) (vec2, vec2) {

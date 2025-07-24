@@ -94,6 +94,9 @@ func (r *Renderer) ApplyBlur(target *ebiten.Image, mask *ebiten.Image, ox, oy, r
 	if radius > 32 {
 		panic("radius can't exceed 32")
 	}
+	if radius < 0 {
+		panic("radius can't be negative")
+	}
 
 	srcBounds := mask.Bounds()
 	srcWidth, srcHeight := float32(srcBounds.Dx()), float32(srcBounds.Dy())
@@ -125,6 +128,9 @@ func (r *Renderer) ApplyBlur2(target *ebiten.Image, mask *ebiten.Image, ox, oy, 
 	if radius > 32 {
 		panic("radius can't exceed 32")
 	}
+	if radius < 0 {
+		panic("radius can't be negative")
+	}
 
 	srcBounds := mask.Bounds()
 	w32, h32 := float32(srcBounds.Dx()), float32(srcBounds.Dy())+radius
@@ -141,6 +147,9 @@ func (r *Renderer) ApplyBlur2(target *ebiten.Image, mask *ebiten.Image, ox, oy, 
 func (r *Renderer) ApplyVertBlur(target *ebiten.Image, mask *ebiten.Image, ox, oy, radius, colorMix float32) {
 	if radius > 32 {
 		panic("radius can't exceed 32")
+	}
+	if radius < 0 {
+		panic("radius can't be negative")
 	}
 
 	srcBounds := mask.Bounds()
@@ -167,6 +176,9 @@ func (r *Renderer) ApplyVertBlur(target *ebiten.Image, mask *ebiten.Image, ox, o
 func (r *Renderer) ApplyHorzBlur(target *ebiten.Image, mask *ebiten.Image, ox, oy, radius, colorMix float32) {
 	if radius > 32 {
 		panic("radius can't exceed 32")
+	}
+	if radius < 0 {
+		panic("radius can't be negative")
 	}
 
 	srcBounds := mask.Bounds()
@@ -230,6 +242,9 @@ func (r *Renderer) ApplyHardShadow(target *ebiten.Image, mask *ebiten.Image, ox,
 func (r *Renderer) ApplyShadow(target *ebiten.Image, mask *ebiten.Image, ox, oy, xOffset, yOffset, radius float32, clamping Clamping) {
 	if radius > 32 {
 		panic("radius can't exceed 32")
+	}
+	if radius < 0 {
+		panic("radius can't be negative")
 	}
 
 	dstBounds, srcBounds := target.Bounds(), mask.Bounds()

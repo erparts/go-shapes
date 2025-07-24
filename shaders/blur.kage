@@ -9,7 +9,7 @@ func Fragment(targetCoords vec4, sourceCoords vec2, color vec4, customVAs vec4) 
 	srcCoords := floor(sourceCoords) + vec2(0.5)
 	radius := customVAs[0]
 	clrMix := customVAs[1]
-	sigma := radius / 3.0
+	sigma := max(radius, 0.001) / 3.0
 	sigma2 := 2.0 * sigma * sigma
 	halfRadius := radius / 2.0
 	accColor := vec4(0.0)
