@@ -138,10 +138,10 @@ func (r *Renderer) ApplyBlur2(target *ebiten.Image, mask *ebiten.Image, ox, oy, 
 	tmp := r.getTemp(0, w, h)
 	preBlend := r.opts.Blend
 	r.opts.Blend = ebiten.BlendCopy
-	hr32 := radius / 2.0
-	r.ApplyVertBlur(tmp, mask, 0, hr32+1.0, radius, 1.0)
+	hrCeil := ceilF32(radius / 2.0)
+	r.ApplyVertBlur(tmp, mask, 0, hrCeil, radius, 1.0)
 	r.opts.Blend = preBlend
-	r.ApplyHorzBlur(target, tmp, ox, oy-hr32-1.0, radius, colorMix)
+	r.ApplyHorzBlur(target, tmp, ox, oy-hrCeil, radius, colorMix)
 }
 
 func (r *Renderer) ApplyVertBlur(target *ebiten.Image, mask *ebiten.Image, ox, oy, radius, colorMix float32) {
@@ -154,16 +154,16 @@ func (r *Renderer) ApplyVertBlur(target *ebiten.Image, mask *ebiten.Image, ox, o
 
 	srcBounds := mask.Bounds()
 	srcWidth, srcHeight := float32(srcBounds.Dx()), float32(srcBounds.Dy())
-	hr32 := radius / 2.0
 	dstBounds := target.Bounds()
 	dstMinX, dstMinY := float32(dstBounds.Min.X), float32(dstBounds.Min.Y)
-	minX, minY := dstMinX+ox, dstMinY+oy-hr32
-	maxX, maxY := dstMinX+ox+srcWidth, dstMinY+oy+srcHeight+hr32
-	r.setDstRectCoords(minX, minY-1, maxX, maxY+1)
+	hrCeil := ceilF32(radius / 2.0)
+	minX, minY := dstMinX+ox, dstMinY+oy-hrCeil
+	maxX, maxY := dstMinX+ox+srcWidth, dstMinY+oy+srcHeight+hrCeil
+	r.setDstRectCoords(minX, minY, maxX, maxY)
 
 	srcMinX, srcMinY := float32(srcBounds.Min.X), float32(srcBounds.Min.Y)
 	srcMaxX, srcMaxY := float32(srcBounds.Max.X), float32(srcBounds.Max.Y)
-	r.setSrcRectCoords(srcMinX, srcMinY-hr32-1, srcMaxX, srcMaxY+hr32+1.0)
+	r.setSrcRectCoords(srcMinX, srcMinY-hrCeil, srcMaxX, srcMaxY+hrCeil)
 	r.setFlatCustomVAs01(radius, colorMix)
 
 	// draw shader
@@ -183,16 +183,16 @@ func (r *Renderer) ApplyHorzBlur(target *ebiten.Image, mask *ebiten.Image, ox, o
 
 	srcBounds := mask.Bounds()
 	srcWidth, srcHeight := float32(srcBounds.Dx()), float32(srcBounds.Dy())
-	hr32 := radius / 2.0
+	hrCeil := ceilF32(radius / 2.0)
 	dstBounds := target.Bounds()
 	dstMinX, dstMinY := float32(dstBounds.Min.X), float32(dstBounds.Min.Y)
-	minX, minY := dstMinX+ox-hr32, dstMinY+oy
-	maxX, maxY := dstMinX+ox+srcWidth+hr32, dstMinY+oy+srcHeight
-	r.setDstRectCoords(minX-1, minY, maxX+1, maxY)
+	minX, minY := dstMinX+ox-hrCeil, dstMinY+oy
+	maxX, maxY := dstMinX+ox+srcWidth+hrCeil, dstMinY+oy+srcHeight
+	r.setDstRectCoords(minX, minY, maxX, maxY)
 
 	srcMinX, srcMinY := float32(srcBounds.Min.X), float32(srcBounds.Min.Y)
 	srcMaxX, srcMaxY := float32(srcBounds.Max.X), float32(srcBounds.Max.Y)
-	r.setSrcRectCoords(srcMinX-hr32-1, srcMinY, srcMaxX+hr32+1.0, srcMaxY)
+	r.setSrcRectCoords(srcMinX-hrCeil, srcMinY, srcMaxX+hrCeil, srcMaxY)
 	r.setFlatCustomVAs01(radius, colorMix)
 
 	// draw shader

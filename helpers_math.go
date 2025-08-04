@@ -30,6 +30,10 @@ func (gen *GoldenRatioGen) Float64() float64 {
 	return v
 }
 
+func ceilF32(x float32) float32 {
+	return float32(math.Ceil(float64(x)))
+}
+
 func abs[Float float32 | float64](a Float) Float {
 	if a < 0 {
 		return -a

@@ -140,8 +140,19 @@ func TestApplyDirBlur(t *testing.T) {
 		rx, ry := ctx.RightClickF32()
 		ctx.Renderer.SetColor(color.RGBA{255, 0, 0, 255})
 		ctx.Renderer.ApplyHorzBlur(canvas, ctx.Images[0], rx-radius, ry-radius, fxRadius, 0.0)
+
+		canvas.SubImage(image.Rect(480-8, 96-16, 480+80-8, 96+16)).(*ebiten.Image).Fill(color.RGBA{0, 255, 0, 255})
+		ctx.Renderer.SetColor(color.RGBA{255, 255, 255, 255})
+		if ebiten.IsKeyPressed(ebiten.KeySpace) {
+			ctx.Renderer.ApplyBlur2(canvas, ctx.Images[1], 480, 96, 30.5, 1.0)
+		} else {
+			ctx.Renderer.ApplyVertBlur(canvas, ctx.Images[1], 480, 96, 30.5, 1.0)
+		}
 	})
-	app.Images = append(app.Images, app.Renderer.NewCircle(float64(radius)))
+
+	rect := ebiten.NewImage(80, 80)
+	rect.Fill(color.RGBA{255, 0, 0, 255})
+	app.Images = append(app.Images, app.Renderer.NewCircle(float64(radius)), rect)
 	if err := ebiten.RunGame(app); err != nil {
 		t.Fatal(err)
 	}
