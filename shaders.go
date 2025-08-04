@@ -24,11 +24,17 @@ var shaderLineSrc []byte
 //go:embed shaders/circle.kage
 var shaderCircleSrc []byte
 
+//go:embed shaders/stroke_circle.kage
+var shaderStrokeCircleSrc []byte
+
 //go:embed shaders/ring.kage
 var shaderRingSrc []byte
 
 //go:embed shaders/ring_sector.kage
 var shaderRingSectorSrc []byte
+
+//go:embed shaders/stroke_ring_sector.kage
+var shaderStrokeRingSectorSrc []byte
 
 //go:embed shaders/pie.kage
 var shaderPieSrc []byte
@@ -177,8 +183,10 @@ var shaderRect *ebiten.Shader
 var shaderStrokeRect *ebiten.Shader
 var shaderLine *ebiten.Shader
 var shaderCircle *ebiten.Shader
+var shaderStrokeCircle *ebiten.Shader
 var shaderRing *ebiten.Shader
 var shaderRingSector *ebiten.Shader
+var shaderStrokeRingSector *ebiten.Shader
 var shaderPie *ebiten.Shader
 var shaderEllipse *ebiten.Shader
 var shaderTriangle *ebiten.Shader
@@ -272,6 +280,12 @@ func ensureShaderCircleLoaded() {
 	}
 }
 
+func ensureShaderStrokeCircleLoaded() {
+	if shaderStrokeCircle == nil {
+		shaderStrokeCircle = mustCompile(shaderStrokeCircleSrc)
+	}
+}
+
 func ensureShaderRingLoaded() {
 	if shaderRing == nil {
 		shaderRing = mustCompile(shaderRingSrc)
@@ -281,6 +295,12 @@ func ensureShaderRingLoaded() {
 func ensureShaderRingSectorLoaded() {
 	if shaderRingSector == nil {
 		shaderRingSector = mustCompile(shaderRingSectorSrc)
+	}
+}
+
+func ensureShaderStrokeRingSectorLoaded() {
+	if shaderStrokeRingSector == nil {
+		shaderStrokeRingSector = mustCompile(shaderStrokeRingSectorSrc)
 	}
 }
 

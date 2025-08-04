@@ -90,6 +90,25 @@ func (r *Renderer) DrawCircle(target *ebiten.Image, cx, cy, radius float32) {
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderCircle, &r.opts)
 }
 
+func (r *Renderer) StrokeCircle(target *ebiten.Image, cx, cy, radius, thickness float32) {
+	if thickness <= 0 {
+		return // nothing to draw
+	}
+	if radius <= thickness/2.0 {
+		rem := thickness/2.0 - radius
+		if rem > 0 {
+			r.DrawCircle(target, cx, cy, rem)
+		}
+		return
+	}
+
+	hthickCeil := ceilF32(thickness / 2.0)
+	r.setDstRectCoords(cx-radius-hthickCeil, cy-radius-hthickCeil, cx+radius+hthickCeil, cy+radius+hthickCeil)
+	ensureShaderStrokeCircleLoaded()
+	r.setFlatCustomVAs(cx, cy, radius, thickness)
+	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderStrokeCircle, &r.opts)
+}
+
 // DrawRing draws a smooth ring at the given position. For ring segments
 // with start and end angles, see [Renderer.DrawRingSector]() instead.
 func (r *Renderer) DrawRing(target *ebiten.Image, cx, cy, inRadius, outRadius float32) {
@@ -151,6 +170,65 @@ func (r *Renderer) internalDrawRingSector(target *ebiten.Image, cx, cy, inRadius
 	r.opts.Uniforms["Rounding"] = rounding
 	r.setFlatCustomVAs(cx, cy, float32(centerDir), outRadius)
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderRingSector, &r.opts)
+	clear(r.opts.Uniforms)
+}
+
+// StrokeRingSector draws the outline of a smooth ring segment. See [RadsRight]
+// constants for angle conventions and docs.
+//
+// Only outer rounding is supported at the moment.
+func (r *Renderer) StrokeRingSector(target *ebiten.Image, cx, cy, inRadius, outRadius, thickness float32, startRads, endRads float64, rounding float32) {
+	if inRadius >= outRadius || outRadius < 0 || startRads == endRads || thickness <= 0 {
+		return // skip empty draws
+	}
+	if inRadius <= 0 {
+		r.StrokeCircle(target, cx, cy, outRadius, thickness)
+	}
+	if endRads >= startRads+2*math.Pi {
+		r.StrokeCircle(target, cx, cy, inRadius, thickness)
+		r.StrokeCircle(target, cx, cy, outRadius, thickness)
+	}
+
+	startRads, endRads = normURads(startRads), normURads(endRads)
+	r.internalStrokeRingSector(target, cx, cy, inRadius, outRadius, thickness, startRads, endRads, rounding)
+}
+
+// precondition: angles are normalized to [0, 2*pi)
+func (r *Renderer) internalStrokeRingSector(target *ebiten.Image, cx, cy, inRadius, outRadius, thickness float32, startRads, endRads float64, rounding float32) {
+	// TODO
+	pieMinX, pieMinY, pieMaxX, pieMaxY := ringSectorBounds(cx, cy, inRadius, outRadius, startRads, endRads)
+	if rounding != 0 {
+		r := abs(rounding)
+		pieMinX -= r
+		pieMinY -= r
+		pieMaxX += r
+		pieMaxY += r
+	}
+	pieMinX -= thickness / 2.0
+	pieMinY -= thickness / 2.0
+	pieMaxX += thickness / 2.0
+	pieMaxY += thickness / 2.0
+
+	dstOX, dstOY := rectOriginF32(target.Bounds())
+	r.vertices[0].DstX = dstOX + pieMinX
+	r.vertices[0].DstY = dstOY + pieMinY
+	r.vertices[1].DstX = dstOX + pieMaxX
+	r.vertices[1].DstY = dstOY + pieMinY
+	r.vertices[2].DstX = dstOX + pieMaxX
+	r.vertices[2].DstY = dstOY + pieMaxY
+	r.vertices[3].DstX = dstOX + pieMinX
+	r.vertices[3].DstY = dstOY + pieMaxY
+
+	ensureShaderStrokeRingSectorLoaded()
+	delta := uradsDeltaCW(startRads, endRads)
+	centerDir := uradsAddCW(startRads, delta/2.0)
+	ws, wc := math.Sincos(delta / 2.0)
+	r.opts.Uniforms["WedgeNormal"] = [2]float32{float32(ws), float32(wc)}
+	r.opts.Uniforms["InRadius"] = inRadius
+	r.opts.Uniforms["Rounding"] = rounding
+	r.opts.Uniforms["Thickness"] = thickness
+	r.setFlatCustomVAs(cx, cy, float32(centerDir), outRadius)
+	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderStrokeRingSector, &r.opts)
 	clear(r.opts.Uniforms)
 }
 

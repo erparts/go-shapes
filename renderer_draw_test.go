@@ -124,6 +124,27 @@ func TestStrokeArea(t *testing.T) {
 	}
 }
 
+// go test -run ^TestStrokeCircle . -count 1
+func TestStrokeCircle(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		lx, ly := ctx.LeftClickF32()
+
+		ctx.Renderer.SetColorF32(1.0, 1.0, 1.0, 1.0)
+		ri, ro := float32(64.0), float32(128.0)
+		ctx.Renderer.ScaleAlphaBy(0.25)
+		ctx.Renderer.DrawCircle(canvas, lx, ly, ri)
+		ctx.Renderer.DrawCircle(canvas, lx, ly, ro)
+
+		ctx.Renderer.SetColorF32(1.0, 1.0, 1.0, 1.0)
+		thick := float32(ctx.DistAnim(16.0, 1.0))
+		ctx.Renderer.StrokeCircle(canvas, lx, ly, ri, thick)
+		ctx.Renderer.StrokeCircle(canvas, lx, ly, ro, thick)
+	})
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
+
 // go test -run ^TestDrawEllipse . -count 1
 func TestDrawEllipse(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
@@ -181,6 +202,28 @@ func TestDrawRingSector(t *testing.T) {
 		ctx.Renderer.DrawRingSector(canvas, cx, cy, 48, 128, startRads, endRads, 0.0)
 		ctx.Renderer.SetColorF32(0.0, 0.5, 0.5, 0.5)
 		ctx.Renderer.DrawRingSector(canvas, cx, cy, 48, 128, startRads, endRads, 8.0)
+	})
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// go test -run ^TestStrokeRingSector$ . -count 1
+func TestStrokeRingSector(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		w, h := rectSizeF32(canvas.Bounds())
+		cx, cy := w/2.0, h/2.0
+		startRads := ctx.ModAnim(2*math.Pi, 1.0)
+		endRads := startRads + 0.4 + ctx.DistAnim(1.6, 1.0)
+
+		ctx.Renderer.SetColorF32(0, 0, 0.5, 0.5)
+		ctx.Renderer.DrawRingSector(canvas, cx, cy, 48, 128, startRads, endRads, 0.0)
+
+		ctx.Renderer.SetColorF32(1.0, 1.0, 1.0, 1.0)
+		thick := float32(ctx.DistAnim(8.0, 1.0))
+		ctx.Renderer.StrokeRingSector(canvas, cx, cy, 48, 128, thick, startRads, endRads, 0.0)
+		ctx.Renderer.SetColorF32(0.0, 0.5, 0.5, 0.5)
+		ctx.Renderer.StrokeRingSector(canvas, cx, cy, 48, 128, thick, startRads, endRads, 8.0)
 	})
 	if err := ebiten.RunGame(app); err != nil {
 		t.Fatal(err)
