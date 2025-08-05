@@ -2,6 +2,7 @@ package shapes
 
 import (
 	"image/color"
+	"math"
 	"testing"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -23,6 +24,31 @@ func TestWarpBarrel(t *testing.T) {
 	app.Renderer.DrawIntArea(img, 0, 0, w, h)
 
 	app.Images = append(app.Images, img)
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// go test -run ^TestWarpArc$ . -count 1
+func TestWarpArc(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		canvas.Fill(color.Black)
+		outRadius := 64 + float32(ctx.DistAnim(172, 0.5))
+		rads := ctx.ModAnim(2*math.Pi, 0.5)
+		cw, ch := rectSizeF32(canvas.Bounds())
+		ctx.Renderer.WarpArc(canvas, ctx.Images[0], cw/2.0, ch/2.0, outRadius, rads)
+	})
+
+	const W, H = 512, 64
+	img := ebiten.NewImage(W, H)
+	from, to := color.RGBA{0, 0, 0, 255}, color.RGBA{255, 255, 255, 255}
+	mask := app.Renderer.NewSimpleGradient(W, H, from, to, DirRadsRTL)
+	app.Renderer.DitherMat4(img, mask, 0, 0, 0, 0, DitherBW, DitherGlitch, 0.0, 0.0)
+	app.Renderer.SetColorF32(0, 0.5, 0, 0.5)
+	app.Renderer.DrawIntRect(img, img.Bounds())
+	app.Renderer.SetColorF32(1, 1, 1, 1)
+	app.Images = append(app.Images, img)
+
 	if err := ebiten.RunGame(app); err != nil {
 		t.Fatal(err)
 	}
