@@ -31,7 +31,7 @@ func Fragment(targetCoords vec4, _ vec2, _ vec4, customVAs vec4) vec4 {
 	}
 
 	// compute UV
-	uv := vec2(deltaRads/radsSpan, (r-inRadius)/(srcSize.y))
+	uv := vec2(deltaRads/radsSpan, 1.0-((r-inRadius)/srcSize.y))
 	coords := imageSrc0Origin() + uv*vec2(samplingWidth, srcSize.y)
 	coords.x += (srcSize.x - samplingWidth) / 2.0
 	return bilinearSampling(coords, vec2(1))

@@ -1,6 +1,7 @@
 package shapes
 
 import (
+	"image"
 	"image/color"
 	"math"
 	"testing"
@@ -33,8 +34,10 @@ func TestWarpBarrel(t *testing.T) {
 func TestWarpArc(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		canvas.Fill(color.Black)
+		ctx.DrawAtF32(canvas, ctx.Images[0], 0, 0)
 		outRadius := 64 + float32(ctx.DistAnim(172, 0.5))
 		rads := ctx.ModAnim(2*math.Pi, 0.5)
+		//rads = RadsBottomRight
 		cw, ch := rectSizeF32(canvas.Bounds())
 		ctx.Renderer.WarpArc(canvas, ctx.Images[0], cw/2.0, ch/2.0, outRadius, rads)
 	})
@@ -46,6 +49,8 @@ func TestWarpArc(t *testing.T) {
 	app.Renderer.DitherMat4(img, mask, 0, 0, 0, 0, DitherBW, DitherGlitch, 0.0, 0.0)
 	app.Renderer.SetColorF32(0, 0.5, 0, 0.5)
 	app.Renderer.DrawIntRect(img, img.Bounds())
+	app.Renderer.SetColorF32(0.5, 0.0, 0.5, 0.5)
+	app.Renderer.DrawIntRect(img, image.Rect(0, 0, W/8, H/16))
 	app.Renderer.SetColorF32(1, 1, 1, 1)
 	app.Images = append(app.Images, img)
 
