@@ -497,7 +497,7 @@ func (r *Renderer) ApplyBlurD4(target *ebiten.Image, mask *ebiten.Image, ox, oy 
 		r.setFlatCustomVA0(colorMix)
 		ensureShaderHorzBlurKernLoaded()
 		downHorzTarget.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderHorzBlurKern, &r.opts)
-	}, true)
+	}, false)
 }
 
 // ApplyGlowD4 is the multipass downscaling version of [Renderer.ApplyGlow]().
