@@ -248,6 +248,25 @@ func TestDrawPie(t *testing.T) {
 	}
 }
 
+// go test -run ^TestStrokePie$ . -count 1
+func TestStrokePie(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		w, h := rectSizeF32(canvas.Bounds())
+		cx, cy := w/2.0, h/2.0
+		rate := -0.01 + ctx.DistAnim(1.02, 1.0)
+		thick := float32(4.0)
+
+		ctx.Renderer.SetColorF32(1.0, 1.0, 1.0, 1.0)
+		ctx.Renderer.StrokePieRate(canvas, cx, cy, 96.0, thick, RadsRight, rate, 6.0)
+
+		ctx.Renderer.SetColorF32(0.0, 1.0, 0.0, 1.0)
+		ctx.Renderer.StrokePie(canvas, cx, cy, 64.0, thick, RadsRight+rate, RadsBottom, 3.0)
+	})
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
+
 // go test -run ^TestDrawQuad$ . -count 1
 func TestDrawQuad(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {

@@ -195,7 +195,6 @@ func (r *Renderer) StrokeRingSector(target *ebiten.Image, cx, cy, inRadius, outR
 
 // precondition: angles are normalized to [0, 2*pi)
 func (r *Renderer) internalStrokeRingSector(target *ebiten.Image, cx, cy, inRadius, outRadius, thickness float32, startRads, endRads float64, rounding float32) {
-	// TODO
 	pieMinX, pieMinY, pieMaxX, pieMaxY := ringSectorBounds(cx, cy, inRadius, outRadius, startRads, endRads)
 	if rounding != 0 {
 		r := abs(rounding)
@@ -240,7 +239,7 @@ func (r *Renderer) internalStrokeRingSector(target *ebiten.Image, cx, cy, inRadi
 //   - startRads = RadsBottom, endRads = RadsRight will draw a pie missing the bottom-right quarter.
 //
 // Notice that the rounding parameter doesn't expand the shape beyond the radius, but it does expand
-// the flat faces of the pie.
+// the side flat faces of the pie.
 func (r *Renderer) DrawPie(target *ebiten.Image, cx, cy, radius float32, startRads, endRads float64, rounding float32) {
 	if startRads == endRads || radius < 0 {
 		return // empty
@@ -281,14 +280,7 @@ func (r *Renderer) internalDrawPieRate(target *ebiten.Image, cx, cy, radius floa
 	pieMaxY += rounding
 
 	dstOX, dstOY := rectOriginF32(target.Bounds())
-	r.vertices[0].DstX = dstOX + pieMinX
-	r.vertices[0].DstY = dstOY + pieMinY
-	r.vertices[1].DstX = dstOX + pieMaxX
-	r.vertices[1].DstY = dstOY + pieMinY
-	r.vertices[2].DstX = dstOX + pieMaxX
-	r.vertices[2].DstY = dstOY + pieMaxY
-	r.vertices[3].DstX = dstOX + pieMinX
-	r.vertices[3].DstY = dstOY + pieMaxY
+	r.setDstRectCoords(dstOX+pieMinX, dstOY+pieMinY, dstOX+pieMaxX, dstOY+pieMaxY)
 
 	ensureShaderPieLoaded()
 	ws, wc := math.Sincos(rate * math.Pi)
@@ -296,6 +288,57 @@ func (r *Renderer) internalDrawPieRate(target *ebiten.Image, cx, cy, radius floa
 	r.opts.Uniforms["Rounding"] = rounding
 	r.setFlatCustomVAs(cx, cy, float32(normURads(centerDir)), radius)
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderPie, &r.opts)
+	clear(r.opts.Uniforms)
+}
+
+// StrokePie is the stroke version of [Renderer.DrawPie](). The shape is drawn with an ouline of the given thickness.
+func (r *Renderer) StrokePie(target *ebiten.Image, cx, cy, radius, thickness float32, startRads, endRads float64, rounding float32) {
+	if startRads == endRads || radius < 0 {
+		return // empty
+	}
+	if endRads >= startRads+2*math.Pi {
+		r.StrokeCircle(target, cx, cy, radius, thickness)
+		return // full circle
+	}
+	startRads, endRads = normURads(startRads), normURads(endRads)
+	delta := uradsDeltaCW(startRads, endRads)
+	centerDir := uradsAddCW(startRads, delta/2.0)
+	r.internalStrokePieRate(target, cx, cy, radius, thickness, centerDir, startRads, endRads, float64(delta)/(2*math.Pi), rounding)
+}
+
+// StrokePie is the stroke version of [Renderer.DrawPieRate](). The shape is drawn with an ouline of the given thickness.
+func (r *Renderer) StrokePieRate(target *ebiten.Image, cx, cy, radius, thickness float32, centerDir, rate float64, rounding float32) {
+	if rate <= 0 || radius < 0 {
+		return // empty
+	}
+	if rate > 1.0 {
+		r.StrokeCircle(target, cx, cy, radius, thickness)
+		return // full circle
+	}
+
+	ratePi := rate * math.Pi
+	startRads, endRads := uradsAddCW(centerDir, ratePi), uradsAddCW(centerDir, ratePi)
+	r.internalStrokePieRate(target, cx, cy, radius, thickness, centerDir, startRads, endRads, rate, rounding)
+}
+
+// preconditions: 0 < rate < 1.0, centerDir, startRads, endRads and rate are consistent
+func (r *Renderer) internalStrokePieRate(target *ebiten.Image, cx, cy, radius, thickness float32, centerDir, startRads, endRads, rate float64, rounding float32) {
+	pieMinX, pieMinY, pieMaxX, pieMaxY := pieBounds(cx, cy, radius, startRads, endRads)
+	pieMinX -= (rounding + thickness)
+	pieMinY -= (rounding + thickness)
+	pieMaxX += (rounding + thickness)
+	pieMaxY += (rounding + thickness)
+
+	dstOX, dstOY := rectOriginF32(target.Bounds())
+	r.setDstRectCoords(dstOX+pieMinX, dstOY+pieMinY, dstOX+pieMaxX, dstOY+pieMaxY)
+
+	ensureShaderStrokePieLoaded()
+	ws, wc := math.Sincos(rate * math.Pi)
+	r.opts.Uniforms["WedgeNormal"] = [2]float32{float32(ws), float32(wc)}
+	r.opts.Uniforms["Rounding"] = rounding
+	r.opts.Uniforms["Thickness"] = thickness
+	r.setFlatCustomVAs(cx, cy, float32(normURads(centerDir)), radius)
+	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderStrokePie, &r.opts)
 	clear(r.opts.Uniforms)
 }
 

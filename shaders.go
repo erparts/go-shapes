@@ -39,6 +39,9 @@ var shaderStrokeRingSectorSrc []byte
 //go:embed shaders/pie.kage
 var shaderPieSrc []byte
 
+//go:embed shaders/stroke_pie.kage
+var shaderStrokePieSrc []byte
+
 //go:embed shaders/ellipse.kage
 var shaderEllipseSrc []byte
 
@@ -191,6 +194,7 @@ var shaderRing *ebiten.Shader
 var shaderRingSector *ebiten.Shader
 var shaderStrokeRingSector *ebiten.Shader
 var shaderPie *ebiten.Shader
+var shaderStrokePie *ebiten.Shader
 var shaderEllipse *ebiten.Shader
 var shaderTriangle *ebiten.Shader
 var shaderHexagon *ebiten.Shader
@@ -311,6 +315,12 @@ func ensureShaderStrokeRingSectorLoaded() {
 func ensureShaderPieLoaded() {
 	if shaderPie == nil {
 		shaderPie = mustCompile(shaderPieSrc)
+	}
+}
+
+func ensureShaderStrokePieLoaded() {
+	if shaderStrokePie == nil {
+		shaderStrokePie = mustCompile(shaderStrokePieSrc)
 	}
 }
 
