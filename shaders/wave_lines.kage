@@ -16,11 +16,13 @@ func Fragment(targetCoords vec4, sourceCoords vec2, color vec4, customVAs vec4) 
 	waveLen := customVAs[3]
 
 	relCoords := targetCoords.xy - imageDstOrigin()
-	relPos := DirRadsCos*relCoords.x + DirRadsSin*relCoords.y
+	size := imageDstSize()
+	distToCenter := relCoords - size/2.0
+	relPos := DirRadsCos*distToCenter.x + DirRadsSin*distToCenter.y - Offset
 
 	bandCTR := floor(relPos/lineThick)*lineThick + lineThick*0.5
 	dist := abs(bandCTR - relPos)
-	rads := 2.0 * Pi * mod(relPos-Offset, waveLen) / waveLen
+	rads := 2.0 * Pi * mod(relPos, waveLen) / waveLen
 	bandWidth := mix(minFillThick, maxFillThick, (tri(rads)+1.0)/2.0)
 	alpha := 1.0 - smoothstep(bandWidth/2.0-AAMargin/2.0, bandWidth/2.0+AAMargin/2.0, dist)
 	return color * alpha

@@ -487,7 +487,11 @@ func TestWaveLines(t *testing.T) {
 		offset += 0.666
 		minFillRate := float32(0.2)
 		maxFillRate := float32(0.8)
-		ctx.Renderer.ApplyWaveLines(canvas, LineThick, minFillRate, maxFillRate, 16.0, offset, DirRadsTTB)
+		radsOffset := ctx.ModAnim(2*math.Pi, 0.2)
+		if ebiten.IsKeyPressed(ebiten.KeySpace) {
+			radsOffset = 0.0
+		}
+		ctx.Renderer.ApplyWaveLines(canvas, LineThick, minFillRate, maxFillRate, 16.0, offset, DirRadsLTR+radsOffset)
 	})
 
 	app.Renderer.SetColorF32(0, 0, 0, 0.2, 0)

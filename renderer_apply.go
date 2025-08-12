@@ -635,11 +635,12 @@ func (r *Renderer) ApplyWaveLines(target *ebiten.Image, lineThick, minFillRate, 
 	minFillThick := minFillRate * lineThick
 	maxFillThick := maxFillRate * lineThick
 	waveLen := linesPerOsc * lineThick
-	offset = float32(math.Mod(float64(offset), float64(waveLen)))
-	r.opts.Uniforms["Offset"] = offset
+	r.opts.Uniforms["Offset"] = float32(math.Mod(float64(offset), float64(waveLen)))
 	drs, drc := math.Sincos(dirRadians)
-	r.opts.Uniforms["DirRadsSin"] = drs
-	r.opts.Uniforms["DirRadsCos"] = drc
+	hypot := math.Hypot(drs, drc)
+	drs, drc = drs/hypot, drc/hypot
+	r.opts.Uniforms["DirRadsSin"] = float32(drs)
+	r.opts.Uniforms["DirRadsCos"] = float32(drc)
 	r.setFlatCustomVAs(lineThick, minFillThick, maxFillThick, waveLen)
 	ensureShaderWaveLinesLoaded()
 	r.DrawShader(target, 0, 0, shaderWaveLines)
