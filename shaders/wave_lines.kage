@@ -1,0 +1,33 @@
+//kage:unit pixels
+package main
+
+var Offset float
+var DirRadsSin float
+var DirRadsCos float
+
+const Pi = 3.14159265359
+
+func Fragment(targetCoords vec4, sourceCoords vec2, color vec4, customVAs vec4) vec4 {
+	const AAMargin = 1.333
+
+	lineThick := customVAs[0]
+	minFillThick := customVAs[1]
+	maxFillThick := customVAs[2]
+	waveLen := customVAs[3]
+
+	relCoords := targetCoords.xy - imageDstOrigin()
+	relPos := DirRadsCos*relCoords.x + DirRadsSin*relCoords.y
+
+	bandCTR := floor(relPos/lineThick)*lineThick + lineThick*0.5
+	dist := abs(bandCTR - relPos)
+	rads := 2.0 * Pi * mod(relPos-Offset, waveLen) / waveLen
+	bandWidth := mix(minFillThick, maxFillThick, (tri(rads)+1.0)/2.0)
+	alpha := 1.0 - smoothstep(bandWidth/2.0-AAMargin/2.0, bandWidth/2.0+AAMargin/2.0, dist)
+	return color * alpha
+}
+
+func tri(x float) float {
+	//x += Pi / 2.0 // aligned to sin
+	//x += Pi       // aligned to cos
+	return 1.0 - 4.0*abs(fract(x/(2.0*Pi))-0.5)
+}

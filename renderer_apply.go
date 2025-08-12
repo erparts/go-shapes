@@ -617,3 +617,31 @@ func (r *Renderer) ApplyScanlinesSharp(target *ebiten.Image, darkThick, clearThi
 	ensureShaderScanlinesSharpLoaded()
 	r.DrawShader(target, 0, 0, shaderScanlinesSharp)
 }
+
+func (r *Renderer) ApplyWaveLines(target *ebiten.Image, lineThick, minFillRate, maxFillRate, linesPerOsc, offset float32, dirRadians float64) {
+	if minFillRate > maxFillRate {
+		panic("minFillRate > maxFillRate")
+	}
+	if minFillRate < 0 {
+		panic("minFillRate < 0")
+	}
+	if maxFillRate == 0 {
+		return
+	}
+	if maxFillRate > 1.0 {
+		panic("maxFillRate > 1.0")
+	}
+
+	minFillThick := minFillRate * lineThick
+	maxFillThick := maxFillRate * lineThick
+	waveLen := linesPerOsc * lineThick
+	offset = float32(math.Mod(float64(offset), float64(waveLen)))
+	r.opts.Uniforms["Offset"] = offset
+	drs, drc := math.Sincos(dirRadians)
+	r.opts.Uniforms["DirRadsSin"] = drs
+	r.opts.Uniforms["DirRadsCos"] = drc
+	r.setFlatCustomVAs(lineThick, minFillThick, maxFillThick, waveLen)
+	ensureShaderWaveLinesLoaded()
+	r.DrawShader(target, 0, 0, shaderWaveLines)
+	clear(r.opts.Uniforms)
+}

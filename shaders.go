@@ -123,6 +123,9 @@ var shaderZoomShadowSrc []byte
 //go:embed shaders/scanlines_sharp.kage
 var shaderScanlinesSharpSrc []byte
 
+//go:embed shaders/wave_lines.kage
+var shaderWaveLinesSrc []byte
+
 //go:embed shaders/flat_paint.kage
 var shaderFlatPaintSrc []byte
 
@@ -222,6 +225,7 @@ var shaderShadow *ebiten.Shader
 var shaderHardShadow *ebiten.Shader
 var shaderZoomShadow *ebiten.Shader
 var shaderScanlinesSharp *ebiten.Shader
+var shaderWaveLines *ebiten.Shader
 var shaderFlatPaint *ebiten.Shader
 var shaderGradient *ebiten.Shader
 var shaderGradientRadial *ebiten.Shader
@@ -483,6 +487,12 @@ func ensureShaderZoomShadowLoaded() {
 func ensureShaderScanlinesSharpLoaded() {
 	if shaderScanlinesSharp == nil {
 		shaderScanlinesSharp = mustCompile(shaderScanlinesSharpSrc)
+	}
+}
+
+func ensureShaderWaveLinesLoaded() {
+	if shaderWaveLines == nil {
+		shaderWaveLines = mustCompile(shaderWaveLinesSrc)
 	}
 }
 

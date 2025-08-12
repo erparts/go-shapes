@@ -475,3 +475,25 @@ func TestScanlinesSharp(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// go test -run ^TestWaveLines . -count 1
+func TestWaveLines(t *testing.T) {
+	const LineThick = 6.0
+
+	offset := float32(0.0)
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		ebiten.SetFullscreen(true)
+		canvas.Fill(color.White)
+		offset += 0.666
+		minFillRate := float32(0.2)
+		maxFillRate := float32(0.8)
+		ctx.Renderer.ApplyWaveLines(canvas, LineThick, minFillRate, maxFillRate, 16.0, offset, DirRadsTTB)
+	})
+
+	app.Renderer.SetColorF32(0, 0, 0, 0.2, 0)
+	app.Renderer.SetColorF32(0, 0.1, 0, 0.2, 1)
+	app.Renderer.SetColorF32(0, 0.1, 0.1, 0.2, 3)
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
