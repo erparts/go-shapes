@@ -76,7 +76,7 @@ func winsTie(manh, bestManh int, offset, bestOffset ivec2) bool {
 }
 
 func validOffsetDistance(offset ivec2, maxOffset int) bool {
-	return abs(offset.x) <= maxOffset && abs(offset.y) <= maxOffset
+	return offset.x*offset.x+offset.y*offset.y <= maxOffset*maxOffset
 }
 
 // return 1 instead of 0 when going out of bounds

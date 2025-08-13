@@ -32,7 +32,7 @@ func TestJFMCompute(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	const DisplayCoords bool = false
+	const DisplayCoords bool = true
 	const DebugPrint bool = false
 	decodeAxisOffsetToSeed := func(a, b int) int {
 		magnitude := a/2 + b
@@ -80,10 +80,9 @@ func TestJFMCompute(t *testing.T) {
 		}
 	}
 	low := [][]color.RGBA{
-		{{1, 1, 1, 1}, {1, 2, 1, 1}, {1, 3, 1, 1}, {1, 4, 1, 1}},
-		{{1, 1, 1, 2}, {1, 2, 1, 2}, {1, 3, 1, 2}, {1, 4, 1, 2}},
-		{{1, 1, 1, 3}, {1, 2, 1, 3}, {1, 3, 1, 3}, {1, 4, 1, 3}},
-		{{1, 1, 1, 4}, {1, 2, 1, 4}, {1, 3, 1, 4}, {1, 4, 1, 4}},
+		{{1, 1, 1, 1}, {1, 2, 1, 1}, {1, 3, 1, 1}},
+		{{1, 1, 1, 2}, {1, 2, 1, 2}, {1, 3, 1, 2}},
+		{{1, 1, 1, 3}, {1, 2, 1, 3}},
 	}
 	for y, row := range low {
 		for x, value := range row {
