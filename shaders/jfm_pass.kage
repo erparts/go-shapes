@@ -1,0 +1,109 @@
+//kage:unit pixels
+package main
+
+// This file implements a single JFA (jump flooding algorithm) pass in Kage.
+// The whole algorithm consists of initialization, loop of passes and finalization.
+//
+// Given Ebitengine's limitations in terms of texture formats, the data for the
+// JF internal maps is encoded as follows:
+//  - vec4(1) represents a pixel with an unknown/max seed offset. Decoding this
+//    value with jfaComputeOffsetToSeed gives a distance of (-382, -382). Users
+//    should not be allowed to request distances beyond 380.
+//  - vec4(0) represents a seed pixel. Decoding this value with jfaComputeOffsetToSeed
+//    gives a distance of (0, 0) (offset to nearest seed is zero).
+//  - Otherwise the (R G B A) values are used to encode the offset to the nearest seed.
+//    In particular, (R G) represents the x offset and (B A) represents the y offset.
+//    More concretely, the absolute offset value is int((int(R/255)/2 + G/255),
+//    which can go from [0..382], and the sign is positive if int(R/255) is even.
+// Due to this encoding, the algorithm supports a max distinguishable seed offset of +/-380.
+// This also means the largest jump worth starting at is 256 (meaning 1 + log2(256) = 9 passes)
+// (successive passes can find offsets > 256, up to the next pow2 - 1)
+
+func Fragment(_ vec4, sourceCoords vec2, _ vec4, customVAs vec4) vec4 {
+	pix := imageSrc0At(sourceCoords)
+	if pix == vec4(0) {
+		return vec4(0) // already a seed
+	}
+
+	jump := int(customVAs[0])
+	maxOffset := int(customVAs[1])
+	bestOffset := jfaComputeOffsetToSeed(pix)
+	initOffset := bestOffset
+	bestManh := manhattan(bestOffset) // if pix is max_offset/uninitialized, bestManh = 382*2
+
+	offsets := [8]ivec2{
+		ivec2(-jump, -jump), ivec2(0, -jump), ivec2(+jump, -jump),
+		ivec2(-jump, 0), ivec2(+jump, 0),
+		ivec2(-jump, +jump), ivec2(0, +jump), ivec2(+jump, +jump),
+	}
+	var neighbours [8]vec4
+	srcOrigin := imageSrc0Origin()
+	srcMax := srcOrigin + imageSrc0Size() - vec2(0.001)
+
+	neighbours[0] = imgSrc0AtOrWhite(sourceCoords+vec2(offsets[0]), srcOrigin, srcMax)
+	neighbours[1] = imgSrc0AtOrWhite(sourceCoords+vec2(offsets[1]), srcOrigin, srcMax)
+	neighbours[2] = imgSrc0AtOrWhite(sourceCoords+vec2(offsets[2]), srcOrigin, srcMax)
+	neighbours[3] = imgSrc0AtOrWhite(sourceCoords+vec2(offsets[3]), srcOrigin, srcMax)
+	neighbours[4] = imgSrc0AtOrWhite(sourceCoords+vec2(offsets[4]), srcOrigin, srcMax)
+	neighbours[5] = imgSrc0AtOrWhite(sourceCoords+vec2(offsets[5]), srcOrigin, srcMax)
+	neighbours[6] = imgSrc0AtOrWhite(sourceCoords+vec2(offsets[6]), srcOrigin, srcMax)
+	neighbours[7] = imgSrc0AtOrWhite(sourceCoords+vec2(offsets[7]), srcOrigin, srcMax)
+
+	for i := 0; i < 8; i++ {
+		neighbour := neighbours[i]
+		offset := jfaComputeOffsetToSeed(neighbour)
+		offset += offsets[i]
+		manh := manhattan(offset)
+		if manh < bestManh || winsTie(manh, bestManh, offset, bestOffset) {
+			bestManh = manh
+			bestOffset = offset
+		}
+	}
+
+	if initOffset != bestOffset && validOffsetDistance(bestOffset, maxOffset) {
+		pix.xy = jfaEncodeAxisOffsetToSeed(bestOffset.x)
+		pix.zw = jfaEncodeAxisOffsetToSeed(bestOffset.y)
+	}
+	return pix
+}
+
+func manhattan(xy ivec2) int {
+	return abs(xy.x) + abs(xy.y)
+}
+
+func winsTie(manh, bestManh int, offset, bestOffset ivec2) bool {
+	return manh == bestManh && (offset.x < bestOffset.x || (offset.x == bestOffset.x && offset.y < bestOffset.y))
+}
+
+func validOffsetDistance(offset ivec2, maxOffset int) bool {
+	return abs(offset.x) <= maxOffset && abs(offset.y) <= maxOffset
+}
+
+// return 1 instead of 0 when going out of bounds
+func imgSrc0AtOrWhite(samplingCoords, origin, maxMinusEpsilon vec2) vec4 {
+	insideBounds := min(step(origin, samplingCoords), step(samplingCoords, maxMinusEpsilon))
+	outsideBounds := 1.0 - min(insideBounds.x, insideBounds.y)
+	return max(imageSrc0UnsafeAt(samplingCoords), vec4(outsideBounds))
+}
+
+func jfaComputeOffsetToSeed(pix vec4) ivec2 {
+	return ivec2(jfaDecodeAxisOffsetToSeed(pix.xy), jfaDecodeAxisOffsetToSeed(pix.zw))
+}
+
+// if pq is vec2(1) (max/unspecified offset), the result will be 382
+func jfaDecodeAxisOffsetToSeed(pq vec2) int {
+	const epsilon = 0.001
+	a := int(pq[0]*255.0 + epsilon)
+	b := int(pq[1]*255.0 + epsilon)
+	magnitude := a/2 + b
+	sign := (1 - 2*(a&1))
+	return sign * magnitude
+}
+
+// precondition: already ensured that the offset is representable and within maxOffset bounds
+func jfaEncodeAxisOffsetToSeed(offset int) vec2 {
+	magnitude := abs(offset)
+	b := min(magnitude, 255)
+	a := float((magnitude-b)*2) + (1.0 - step(0.0, float(offset)))
+	return vec2(a/255.0, float(b)/255.0)
+}
