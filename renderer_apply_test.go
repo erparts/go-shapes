@@ -69,7 +69,11 @@ func TestApplyOutline(t *testing.T) {
 
 		rx, ry := ctx.RightClickF32()
 		ctx.Renderer.SetColor(color.RGBA{255, 255, 255, 255})
-		ctx.Renderer.ApplyOutline(canvas, ctx.Images[0], rx-radius, ry-radius, thick)
+		if ebiten.IsKeyPressed(ebiten.KeySpace) {
+			ctx.DrawAtF32(canvas, ctx.Images[0], rx-radius, ry-radius)
+		} else {
+			ctx.Renderer.ApplyOutline(canvas, ctx.Images[0], rx-radius, ry-radius, thick)
+		}
 	})
 	app.Images = append(app.Images, app.Renderer.NewCircle(float64(radius)))
 	if err := ebiten.RunGame(app); err != nil {

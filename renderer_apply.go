@@ -7,6 +7,9 @@ import (
 )
 
 // Precondition: thickness can't exceed 32.
+//
+// WARNING: this is a quadratic algorithm on GPU. For large expansions,
+// consider [Renderer.JFMExpansion]() instead.
 func (r *Renderer) ApplyExpansion(target *ebiten.Image, mask *ebiten.Image, ox, oy, thickness float32) {
 	if thickness > 32 {
 		panic("thickness can't exceed 32")
@@ -34,6 +37,9 @@ func (r *Renderer) ApplyExpansion(target *ebiten.Image, mask *ebiten.Image, ox, 
 }
 
 // Precondition: thickness can't exceed 32.
+//
+// WARNING: this is a quadratic algorithm on GPU. For large erosions,
+// consider [Renderer.JFMErosion]() instead.
 func (r *Renderer) ApplyErosion(target *ebiten.Image, mask *ebiten.Image, ox, oy, thickness float32) {
 	if thickness > 32 {
 		panic("thickness can't exceed 32")
@@ -60,6 +66,9 @@ func (r *Renderer) ApplyErosion(target *ebiten.Image, mask *ebiten.Image, ox, oy
 }
 
 // Precondition: thickness can't exceed 32.
+//
+// WARNING: this is a quadratic algorithm on GPU. For large outlines,
+// consider [Renderer.JFMOutline]() instead.
 func (r *Renderer) ApplyOutline(target *ebiten.Image, mask *ebiten.Image, ox, oy, thickness float32) {
 	if thickness > 32 {
 		panic("thickness can't exceed 32")
@@ -89,7 +98,8 @@ func (r *Renderer) ApplyOutline(target *ebiten.Image, mask *ebiten.Image, ox, oy
 // ApplyBlur applies a gaussian blur to the given mask and draws it onto the given target.
 // colorMix = 0 will use the renderer's vertex colors; colorMix = 1 will use the original mask colors.
 //
-// For radiuses above 4, you typically will prefer using ApplyBlur2.
+// WARNING: this is a quadratic algorithm on GPU. For radiuses above 4, you want to look at
+// [Renderer.ApplyBlur2]() or [Renderer.ApplyBlurD4]().
 func (r *Renderer) ApplyBlur(target *ebiten.Image, mask *ebiten.Image, ox, oy, radius, colorMix float32) {
 	if radius > 32 {
 		panic("radius can't exceed 32")
@@ -121,7 +131,7 @@ func (r *Renderer) ApplyBlur(target *ebiten.Image, mask *ebiten.Image, ox, oy, r
 
 // ApplyBlur2 is similar to ApplyBlur, but uses two 1D passes instead of a single 2D pass.
 // This greatly reduces the amount of sampled pixels for the shader, and despite breaking
-// batching, tends to be much more efficient than ApplyBlur.
+// batching tends to be much more efficient than [Renderer.ApplyBlur]().
 //
 // This function uses one internal offscreen (#0).
 func (r *Renderer) ApplyBlur2(target *ebiten.Image, mask *ebiten.Image, ox, oy, radius, colorMix float32) {
@@ -347,7 +357,8 @@ func (r *Renderer) ApplySimpleGlow(target *ebiten.Image, mask *ebiten.Image, ox,
 //     by the renderer's vertex colors. If 1, the glow color will be determined by the original
 //     mask colors. Any values in between will lead to linear interpolation.
 //
-// Notice that this effect uses an internal offscreen (#0) and two passes.
+// Notice that this effect uses an internal offscreen (#0) and two passes, and target and mask
+// can be on the same internal atlas.
 func (r *Renderer) ApplyGlow(target *ebiten.Image, mask *ebiten.Image, ox, oy, horzRadius, vertRadius, threshStart, threshEnd, colorMix float32) {
 	if threshStart > threshEnd {
 		panic("threshStart > threshEnd")
@@ -491,7 +502,8 @@ var gaussKerns = [][9]float32{
 // cost of more steps). When enough resources are available (e.g. most medium-sized
 // or small blurs), ApplyBlur2 tends to be slightly more efficient than ApplyBlurD4.
 //
-// This function uses two internal offscreens (#0, #1).
+// This function uses two internal offscreens (#0, #1), and target and mask can be on
+// the same internal atlas.
 func (r *Renderer) ApplyBlurD4(target *ebiten.Image, mask *ebiten.Image, ox, oy float32, horzKernel, vertKernel GaussKern, colorMix float32) {
 	r.applyKernelD4(target, mask, ox, oy, horzKernel, vertKernel, func(downHorzTarget *ebiten.Image) {
 		r.setFlatCustomVA0(colorMix)
@@ -503,7 +515,8 @@ func (r *Renderer) ApplyBlurD4(target *ebiten.Image, mask *ebiten.Image, ox, oy 
 // ApplyGlowD4 is the multipass downscaling version of [Renderer.ApplyGlow]().
 // See [Renderer.ApplyBlurD4]() for further docs and context.
 //
-// This function uses two internal offscreens (#0, #1).
+// This function uses two internal offscreens (#0, #1), and target and mask can be on
+// the same internal atlas.
 func (r *Renderer) ApplyGlowD4(target *ebiten.Image, mask *ebiten.Image, ox, oy float32, horzKernel, vertKernel GaussKern, threshStart, threshEnd, colorMix float32) {
 	if threshStart > threshEnd {
 		panic("threshStart > threshEnd")
@@ -519,7 +532,8 @@ func (r *Renderer) ApplyGlowD4(target *ebiten.Image, mask *ebiten.Image, ox, oy 
 // ApplyColorGlowD4 is a color-specific version of [Renderer.ApplyGlowD4](), where glow
 // intensity is determined by color similarity instead of lightness.
 //
-// This function uses two internal offscreens (#0, #1).
+// This function uses two internal offscreens (#0, #1), and target and mask can be on
+// the same internal atlas.
 func (r *Renderer) ApplyColorGlowD4(target *ebiten.Image, mask *ebiten.Image, ox, oy float32, horzKernel, vertKernel GaussKern, rgb [3]float32, threshStart, threshEnd, colorMix float32) {
 	if threshStart > threshEnd {
 		panic("threshStart > threshEnd")
@@ -544,7 +558,8 @@ func (r *Renderer) ApplyColorGlowD4(target *ebiten.Image, mask *ebiten.Image, ox
 // and Kernel uniforms have been set, as well as the downscaled source image, but other uniforms
 // and custom VAs have to be set during invocation.
 //
-// This function uses two internal offscreens (#0, #1).
+// This function uses two internal offscreens (#0, #1), and target and mask can be on
+// the same internal atlas.
 func (r *Renderer) applyKernelD4(target *ebiten.Image, mask *ebiten.Image, ox, oy float32, horzKernel, vertKernel GaussKern, invokeShader func(downHorzTarget *ebiten.Image), lighterBlend bool) {
 	// measures
 	const downscaling = 4
