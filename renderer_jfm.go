@@ -11,6 +11,8 @@ type JFMInitMode uint8
 
 const (
 	JFMBoundary JFMInitMode = iota
+	JFMInside
+	JFMOutside
 )
 
 // JFMCompute computes a jumping flood map of the given source and stores it
@@ -45,12 +47,20 @@ func (r *Renderer) JFMCompute(jfmap, source *ebiten.Image, initMode JFMInitMode,
 		panic(fmt.Sprintf("source size != jfmap size (%dx%d != %dx%d)", sw, sh, tw, th))
 	}
 
-	ensureShaderJFMInitBoundaryLoaded()
 	ensureShaderJFMPassLoaded()
 	var initShader *ebiten.Shader
 	switch initMode {
 	case JFMBoundary:
+		ensureShaderJFMInitBoundaryLoaded()
 		initShader = shaderJFMInitBoundary
+	case JFMInside:
+		ensureShaderJFMInitFillLoaded()
+		initShader = shaderJFMInitFill
+		r.setFlatCustomVAs01(0.001, 1.0)
+	case JFMOutside:
+		ensureShaderJFMInitFillLoaded()
+		initShader = shaderJFMInitFill
+		r.setFlatCustomVAs01(0.0, 0.001)
 	default:
 		panic(initMode) // invalid JFMInitMode
 	}
@@ -108,9 +118,10 @@ func (r *Renderer) JFMCompute(jfmap, source *ebiten.Image, initMode JFMInitMode,
 //
 // JFMExpand performs morphological expansion.
 //
-// - colorMix controls the outline color (0 = use vertex colors, 1 = use source colors)
-// - jfmap can be nil, in which case it will be automatically generated for only this operation
-// - source and jfmap should be in the same atlas to avoid automatic atlasing issues.
+//   - colorMix controls the outline color (0 = use vertex colors, 1 = use source colors)
+//   - jfmap can be nil, in which case it will be automatically generated for only this operation
+//     using [JFMInitInside] mode.
+//   - source and jfmap should be in the same atlas to avoid automatic atlasing issues.
 func (r *Renderer) JFMExpand(target, source, jfmap *ebiten.Image, ox, oy, thickness, colorMix float32) {
 	panic("unimplemented")
 }
@@ -119,9 +130,10 @@ func (r *Renderer) JFMExpand(target, source, jfmap *ebiten.Image, ox, oy, thickn
 //
 // JFMErode performs morphological erosion.
 //
-// - colorMix controls the outline color (0 = use vertex colors, 1 = use source colors)
-// - jfmap can be nil, in which case it will be automatically generated for only this operation
-// - source and jfmap should be in the same atlas to avoid automatic atlasing issues.
+//   - colorMix controls the outline color (0 = use vertex colors, 1 = use source colors)
+//   - jfmap can be nil, in which case it will be automatically generated for only this operation
+//     using [JFMInitInside]
+//   - source and jfmap should be in the same atlas to avoid automatic atlasing issues.
 func (r *Renderer) JFMErode(target, source, jfmap *ebiten.Image, ox, oy, thickness, colorMix float32) {
 	panic("unimplemented")
 }
@@ -130,10 +142,11 @@ func (r *Renderer) JFMErode(target, source, jfmap *ebiten.Image, ox, oy, thickne
 //
 // JFMOutline performs morphological outlining.
 //
-// - colorMix controls the outline color (0 = use vertex colors, 1 = use source colors)
-// - jfmap can be nil, in which case it will be automatically generated for only this operation
-// - source and jfmap should be in the same atlas to avoid automatic atlasing issues.
-func (r *Renderer) JFMOutline(target, source, jfmap *ebiten.Image, ox, oy, inThickness, outThickness, colorMix float32) {
+//   - colorMix controls the outline color (0 = use vertex colors, 1 = use source colors)
+//   - jfmap can be nil, in which case it will be automatically generated for only this operation
+//     using [JFMInitBoundary] mode.
+//   - source and jfmap should be in the same atlas to avoid automatic atlasing issues.
+func (r *Renderer) JFMOutline(target, source, jfmap *ebiten.Image, ox, oy, inThickness, outThickness, inOpacity, colorMix float32) {
 	panic("unimplemented")
 }
 
@@ -143,9 +156,10 @@ func (r *Renderer) JFMOutline(target, source, jfmap *ebiten.Image, ox, oy, inThi
 // internal outline, which includes the image borders where the target clips the source, while
 // also allowing to control the inner fill opacity.
 //
-// - colorMix controls the outline color (0 = use vertex colors, 1 = use source colors)
-// - jfmap can be nil, in which case it will be automatically generated for only this operation
-// - source and jfmap should be in the same atlas to avoid automatic atlasing issues.
+//   - colorMix controls the outline color (0 = use vertex colors, 1 = use source colors)
+//   - jfmap can be nil, in which case it will be automatically generated for only this operation
+//     using [JFMInitBoundary] mode.
+//   - source and jfmap should be in the same atlas to avoid automatic atlasing issues.
 func (r *Renderer) JFMInsetContour(target, source, jfmap *ebiten.Image, ox, oy, inThickness, inOpacity, colorMix float32) {
 	panic("unimplemented")
 }

@@ -186,6 +186,9 @@ var shaderHalftoneTriSrc []byte
 //go:embed shaders/jfm_pass.kage
 var shaderJFMPassSrc []byte
 
+//go:embed shaders/jfm_init_fill.kage
+var shaderJFMInitFillSrc []byte
+
 //go:embed shaders/jfm_init_boundary.kage
 var shaderJFMInitBoundarySrc []byte
 
@@ -252,6 +255,7 @@ var shaderTileTriUpGrid *ebiten.Shader
 var shaderTileTriHex *ebiten.Shader
 var shaderHalftoneTri *ebiten.Shader
 var shaderJFMPass *ebiten.Shader
+var shaderJFMInitFill *ebiten.Shader
 var shaderJFMInitBoundary *ebiten.Shader
 
 var shaderStudyWaveFuncs *ebiten.Shader
@@ -621,6 +625,12 @@ func ensureShaderHalftoneTriLoaded() {
 func ensureShaderJFMPassLoaded() {
 	if shaderJFMPass == nil {
 		shaderJFMPass = mustCompile(shaderJFMPassSrc)
+	}
+}
+
+func ensureShaderJFMInitFillLoaded() {
+	if shaderJFMInitFill == nil {
+		shaderJFMInitFill = mustCompile(shaderJFMInitFillSrc)
 	}
 }
 

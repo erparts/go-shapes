@@ -1,7 +1,7 @@
 //kage:unit pixels
 package main
 
-// for docs on the implementation details, see jfa.kage
+// see jfm_pass.kage for further context on JFA
 
 // this shader initializes a jfa mask based on boundary detection
 
