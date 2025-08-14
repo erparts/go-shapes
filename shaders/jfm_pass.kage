@@ -7,19 +7,19 @@ package main
 // Given Ebitengine's limitations in terms of texture formats, the data for the
 // JF internal maps is encoded as follows:
 //  - vec4(1) represents a pixel with an unknown/max seed offset. Decoding this
-//    value with jfaComputeOffsetToSeed gives a distance of (-382, -382). Users
-//    should not be allowed to request distances beyond 380.
+//    value with jfaComputeOffsetToSeed gives a distance of (-32767, -32767). Users
+//    should not be allowed to request distances beyond 32k.
 //  - vec4(0) represents a seed pixel. Decoding this value with jfaComputeOffsetToSeed
 //    gives a distance of (0, 0) (offset to nearest seed is zero).
 //  - Otherwise the (R G B A) values are used to encode the offset to the nearest seed.
 //    In particular, (R G) represents the x offset and (B A) represents the y offset.
-//    More concretely, the absolute offset value is int((int(R/255)/2 + G/255),
-//    which can go from [0..382], and the sign is positive if int(R/255) is even.
-// Due to this encoding, the algorithm supports a max distinguishable seed offset of +/-380.
-// This also means the largest jump worth starting at is 256 (meaning 1 + log2(256) = 9 passes)
-// (successive passes can find offsets > 256, up to the next pow2 - 1)
+//    More concretely, the absolute offset value is int((256 * int(R/255)/2 + G/255),
+//    which can go from [0..32767], and the sign is positive if int(R/255) is even.
+// Due to this encoding, the algorithm supports a max distinguishable seed offset of +/-32511.
+// This also means the largest jump worth starting at is 16384 (meaning 1 + log2(16384) = 15
+// passes) (successive passes can find offsets > 16384, up to the next pow2 - 1)
 
-func Fragment(_ vec4, sourceCoords vec2, _ vec4, customVAs vec4) vec4 {
+func Fragment(targetCoords vec4, sourceCoords vec2, _ vec4, customVAs vec4) vec4 {
 	pix := imageSrc0At(sourceCoords)
 	if pix == vec4(0) {
 		return vec4(0) // already a seed
@@ -29,7 +29,7 @@ func Fragment(_ vec4, sourceCoords vec2, _ vec4, customVAs vec4) vec4 {
 	maxOffset := int(customVAs[1])
 	bestOffset := jfaComputeOffsetToSeed(pix)
 	initOffset := bestOffset
-	bestManh := manhattan(bestOffset) // if pix is max_offset/uninitialized, bestManh = 382*2
+	bestManh := manhattan(bestOffset) // if pix is max_offset/uninitialized, bestManh = 32767*2
 
 	offsets := [8]ivec2{
 		ivec2(-jump, -jump), ivec2(0, -jump), ivec2(+jump, -jump),
@@ -90,20 +90,21 @@ func jfaComputeOffsetToSeed(pix vec4) ivec2 {
 	return ivec2(jfaDecodeAxisOffsetToSeed(pix.xy), jfaDecodeAxisOffsetToSeed(pix.zw))
 }
 
-// if pq is vec2(1) (max/unspecified offset), the result will be 382
+// if pq is vec2(1) (max/unspecified offset), the result will be -32767
 func jfaDecodeAxisOffsetToSeed(pq vec2) int {
 	const epsilon = 0.001
-	a := int(pq[0]*255.0 + epsilon)
-	b := int(pq[1]*255.0 + epsilon)
-	magnitude := a/2 + b
-	sign := (1 - 2*(a&1))
+	a := int((pq[0] + epsilon) * 255.0)
+	b := int((pq[1] + epsilon) * 255.0)
+	magnitude := ((a >> 1) << 8) + b
+	sign := (1 - ((a & 1) << 1))
 	return sign * magnitude
 }
 
 // precondition: already ensured that the offset is representable and within maxOffset bounds
 func jfaEncodeAxisOffsetToSeed(offset int) vec2 {
 	magnitude := abs(offset)
-	b := min(magnitude, 255)
-	a := float((magnitude-b)*2) + (1.0 - step(0.0, float(offset)))
+	hi := magnitude >> 8
+	b := magnitude - (hi << 8)
+	a := float(hi<<1) + (1.0 - step(0.0, float(offset)))
 	return vec2(a/255.0, float(b)/255.0)
 }

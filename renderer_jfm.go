@@ -2,6 +2,7 @@ package shapes
 
 import (
 	"fmt"
+	"image"
 	"math/bits"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -24,9 +25,9 @@ const (
 // operations like outlining, expansion and erosion. Internal encoding details
 // are documented in jfm_pass.kage
 //
-// The maxDistance can't exceed 380 due to Ebitengine texture format limitations.
+// The maxDistance can't exceed 32k due to Ebitengine texture format limitations.
 //
-// The function panics if maxDistance <= 0, maxDistance > 380, source size != jfmap
+// The function panics if maxDistance <= 0, maxDistance > 32k, source size != jfmap
 // size or an invalid initMode is given.
 //
 // This function uses one internal offscreen (#0), and jfmap and source can be on
@@ -36,8 +37,8 @@ func (r *Renderer) JFMCompute(jfmap, source *ebiten.Image, initMode JFMInitMode,
 	if maxDistance <= 0 {
 		panic("maxDistance <= 0")
 	}
-	if maxDistance > 380 {
-		panic("maxDistance > 380")
+	if maxDistance > 32000 { // 32511 technically
+		panic("maxDistance > 32000")
 	}
 	sbounds := source.Bounds()
 	tbounds := jfmap.Bounds()
@@ -112,6 +113,33 @@ func (r *Renderer) JFMCompute(jfmap, source *ebiten.Image, initMode JFMInitMode,
 	// cleanup
 	r.opts.Blend = memoBlend
 	r.opts.Images[0] = nil
+}
+
+// JFMComputeUnsafeTemp is a utility method that puts both source and a newly generated jumping flood map into
+// the given internal offscreen, returning references to the new images. This uses [Renderer.JFMCompute]()
+// internally, so the internal offscreen index can't be #0 and all the derived parameter conditions apply.
+//
+// For details on internal renderer offscreens, please see [Renderer.UnsafeTemp]().
+func (r *Renderer) JFMComputeUnsafeTemp(offscreenIndex int, source *ebiten.Image, initMode JFMInitMode, maxDistance int) (sourceTemp, jfmapTemp *ebiten.Image) {
+	if offscreenIndex == 0 {
+		panic("JFMComputeTemp expects an offscreenIndex > 0, as 0 is already used by JFMCompute")
+	}
+	_, _, w, h := rectOriginSize(source.Bounds())
+	ox, oy := 0, 0
+	if h <= w {
+		oy = h
+	} else {
+		ox = w
+	}
+	temp := r.UnsafeTemp(offscreenIndex, ox+w, oy+h)
+	var opts ebiten.DrawImageOptions
+	opts.Blend = ebiten.BlendCopy
+	temp.DrawImage(source, &opts)
+
+	sourceTemp = temp.SubImage(image.Rect(ox, oy, ox+w, oy+h)).(*ebiten.Image)
+	jfmapTemp = temp.SubImage(image.Rect(ox, oy, ox+w, oy+h)).(*ebiten.Image)
+	r.JFMCompute(jfmapTemp, sourceTemp, initMode, maxDistance)
+	return sourceTemp, jfmapTemp
 }
 
 // TODO: unimplemented

@@ -10,7 +10,42 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// go test -run ^TestJFMCompute . -count 1
+func jfmDebugPrint(t *testing.T, out *image.RGBA) {
+	const DisplayMode string = "coords" // "coords", "rgba" or "dual"
+	const DebugPrint bool = false
+
+	decodeAxisOffsetToSeed := func(a, b int) int {
+		magnitude := ((a >> 1) << 8) + b
+		sign := (1 - ((a & 1) << 1))
+		return sign * magnitude
+	}
+	fmtRGBA := func(rgba color.RGBA) string {
+		x := decodeAxisOffsetToSeed(int(rgba.R), int(rgba.G))
+		y := decodeAxisOffsetToSeed(int(rgba.B), int(rgba.A))
+		switch DisplayMode {
+		case "coords":
+			return fmt.Sprintf("[%+04d %+04d]", x, y)
+		case "rgba":
+			return fmt.Sprintf("[%03d %03d %03d %03d]", rgba.R, rgba.G, rgba.B, rgba.A)
+		case "dual":
+			return fmt.Sprintf("[%+04d %+04d](%03d %03d %03d %03d)", x, y, rgba.R, rgba.G, rgba.B, rgba.A)
+		default:
+			panic("invalid display mode '" + DisplayMode + "'")
+		}
+	}
+	if DebugPrint {
+		for y := range out.Rect.Max.Y {
+			fmt.Printf("row#%d ", y)
+			for x := range out.Rect.Max.X {
+				fmt.Printf("%s ", fmtRGBA(out.RGBAAt(x, y)))
+			}
+			fmt.Printf("\n")
+		}
+		t.Fatalf("debug print")
+	}
+}
+
+// go test -run ^TestJFMCompute$ . -count 1
 func TestJFMCompute(t *testing.T) {
 	r := NewRenderer()
 	src := ebiten.NewImage(9, 9)
@@ -31,33 +66,7 @@ func TestJFMCompute(t *testing.T) {
 	if err := ebiten.RunGame(&testOutputWriter{subject: dst, out: out.Pix}); err != nil {
 		t.Fatal(err)
 	}
-
-	const DisplayCoords bool = true
-	const DebugPrint bool = false
-	decodeAxisOffsetToSeed := func(a, b int) int {
-		magnitude := a/2 + b
-		sign := (1 - 2*(a&1))
-		return sign * magnitude
-	}
-	fmtRGBA := func(rgba color.RGBA) string {
-		if DisplayCoords {
-			x := decodeAxisOffsetToSeed(int(rgba.R), int(rgba.G))
-			y := decodeAxisOffsetToSeed(int(rgba.B), int(rgba.A))
-			return fmt.Sprintf("[%+04d %+04d]", x, y)
-		} else {
-			return fmt.Sprintf("[%03d %03d %03d %03d]", rgba.R, rgba.G, rgba.B, rgba.A)
-		}
-	}
-	if DebugPrint {
-		for y := range 9 {
-			fmt.Printf("row#%d ", y)
-			for x := range 9 {
-				fmt.Printf("%s ", fmtRGBA(out.RGBAAt(x, y)))
-			}
-			fmt.Printf("\n")
-		}
-		t.Fatalf("debug print")
-	}
+	jfmDebugPrint(t, out)
 
 	expectedOut := image.NewRGBA(image.Rect(0, 0, 9, 9))
 	for i := range expectedOut.Pix {
@@ -89,6 +98,38 @@ func TestJFMCompute(t *testing.T) {
 			expectedOut.SetRGBA(3+x, 3+y, value)
 		}
 	}
+
+	if !slices.Equal(out.Pix, expectedOut.Pix) {
+		t.Fatalf("expected slices.Equal(expected, out)\nexpected:\n%v\nout:\n%v", expectedOut.Pix, out.Pix)
+	}
+}
+
+// go test -run ^TestJFMCompute2$ . -count 1
+func TestJFMCompute2(t *testing.T) {
+	r := NewRenderer()
+	src := ebiten.NewImage(1, 260)
+	dst := ebiten.NewImage(1, 260)
+	src.Set(0, 258, color.White)
+	r.JFMCompute(dst, src, JFMBoundary, 257)
+
+	out := image.NewRGBA(image.Rect(0, 0, 1, 260))
+	if err := ebiten.RunGame(&testOutputWriter{subject: dst, out: out.Pix}); err != nil {
+		t.Fatal(err)
+	}
+	jfmDebugPrint(t, out)
+
+	expectedOut := image.NewRGBA(image.Rect(0, 0, 1, 260))
+	for i := range 260 {
+		n := 258 - i
+		if n < 256 {
+			expectedOut.SetRGBA(0, i, color.RGBA{0, 0, 0, uint8(n)})
+		} else {
+			expectedOut.SetRGBA(0, i, color.RGBA{0, 0, 2, uint8(n - 256)})
+		}
+	}
+	expectedOut.SetRGBA(0, 258, color.RGBA{0, 0, 0, 0})       // seed
+	expectedOut.SetRGBA(0, 259, color.RGBA{0, 0, 1, 1})       // after seed
+	expectedOut.SetRGBA(0, 0, color.RGBA{255, 255, 255, 255}) // outside range
 
 	if !slices.Equal(out.Pix, expectedOut.Pix) {
 		t.Fatalf("expected slices.Equal(expected, out)\nexpected:\n%v\nout:\n%v", expectedOut.Pix, out.Pix)
