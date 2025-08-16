@@ -10,13 +10,16 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
+const negBit = 0x80
+
 func jfmDebugPrint(t *testing.T, out *image.RGBA) {
 	const DisplayMode string = "coords" // "coords", "rgba" or "dual"
 	const DebugPrint bool = false
 
 	decodeAxisOffsetToSeed := func(a, b int) int {
-		magnitude := ((a >> 1) << 8) + b
-		sign := (1 - ((a & 1) << 1))
+		hi, lo := a, b
+		magnitude := ((hi & 0x7F) << 8) | lo
+		sign := 1 - ((hi >> 7) << 1)
 		return sign * magnitude
 	}
 	fmtRGBA := func(rgba color.RGBA) string {
@@ -81,17 +84,17 @@ func TestJFMCompute(t *testing.T) {
 	expectedOut.SetRGBA(1, 2, color.RGBA{0, 0, 0, 0})
 	expectedOut.SetRGBA(2, 2, color.RGBA{0, 0, 0, 0})
 
-	expectedOut.SetRGBA(1, 1, color.RGBA{1, 1, 0, 0})
+	expectedOut.SetRGBA(1, 1, color.RGBA{negBit, 1, 0, 0})
 	for c := range 3 {
 		for i := range 4 {
-			expectedOut.SetRGBA(c, 3+i, color.RGBA{0, 0, 1, uint8(i + 1)})
-			expectedOut.SetRGBA(3+i, c, color.RGBA{1, uint8(i + 1), 0, 0})
+			expectedOut.SetRGBA(c, 3+i, color.RGBA{0, 0, negBit, uint8(i + 1)})
+			expectedOut.SetRGBA(3+i, c, color.RGBA{negBit, uint8(i + 1), 0, 0})
 		}
 	}
 	low := [][]color.RGBA{
-		{{1, 1, 1, 1}, {1, 2, 1, 1}, {1, 3, 1, 1}},
-		{{1, 1, 1, 2}, {1, 2, 1, 2}, {1, 3, 1, 2}},
-		{{1, 1, 1, 3}, {1, 2, 1, 3}},
+		{{negBit, 1, negBit, 1}, {negBit, 2, negBit, 1}, {negBit, 3, negBit, 1}},
+		{{negBit, 1, negBit, 2}, {negBit, 2, negBit, 2}, {negBit, 3, negBit, 2}},
+		{{negBit, 1, negBit, 3}, {negBit, 2, negBit, 3}},
 	}
 	for y, row := range low {
 		for x, value := range row {
@@ -124,11 +127,11 @@ func TestJFMCompute2(t *testing.T) {
 		if n < 256 {
 			expectedOut.SetRGBA(0, i, color.RGBA{0, 0, 0, uint8(n)})
 		} else {
-			expectedOut.SetRGBA(0, i, color.RGBA{0, 0, 2, uint8(n - 256)})
+			expectedOut.SetRGBA(0, i, color.RGBA{0, 0, 1, uint8(n - 256)})
 		}
 	}
 	expectedOut.SetRGBA(0, 258, color.RGBA{0, 0, 0, 0})       // seed
-	expectedOut.SetRGBA(0, 259, color.RGBA{0, 0, 1, 1})       // after seed
+	expectedOut.SetRGBA(0, 259, color.RGBA{0, 0, negBit, 1})  // after seed
 	expectedOut.SetRGBA(0, 0, color.RGBA{255, 255, 255, 255}) // outside range
 
 	if !slices.Equal(out.Pix, expectedOut.Pix) {
@@ -155,4 +158,48 @@ func (t *testOutputWriter) Update() error {
 		return ebiten.Termination
 	}
 	return nil
+}
+
+// go test -run ^TestJFMExpand$ . -count 1
+func TestJFMExpand(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		canvas.Fill(color.Black)
+
+		w, h := rectSizeF32(ctx.Images[0].Bounds())
+		lx, ly := ctx.LeftClickF32()
+		ctx.DrawAtF32(canvas, ctx.Images[0], lx-w/2, ly-h/2)
+		rx, ry := ctx.RightClickF32()
+		ctx.Renderer.JFMExpand(canvas, ctx.Images[0], nil, rx-w/2, ry-h/2, 16.0, 0.0)
+	})
+
+	const BaseRadius = 128
+	circle := ebiten.NewImage(BaseRadius*2, BaseRadius*2)
+	app.Renderer.GradientRadial(circle, BaseRadius, BaseRadius, color.RGBA{0, 196, 255, 255}, color.RGBA{0, 0, 0, 0}, BaseRadius*0.25, BaseRadius*0.75, BaseRadius, -1, 3.0)
+	app.Renderer.SetBlend(ebiten.BlendSourceAtop)
+	app.Renderer.Gradient(circle, nil, 0, 0, color.RGBA{196, 64, 0, 196}, color.RGBA{64, 16, 0, 64}, -1.0, DirRadsBLTR, 0.75)
+	app.Renderer.SetBlend(ebiten.BlendSourceOver)
+	app.Images = append(app.Images, circle)
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// go test -run ^TestJFMHeat$ . -count 1
+func TestJFMHeat(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		canvas.Clear()
+		px, py := ebiten.CursorPosition()
+		rx, ry := ctx.RightClickF32()
+		ctx.Renderer.DrawCircle(canvas, float32(px), float32(py), 128.0)
+		ctx.Renderer.DrawCircle(canvas, rx, ry, 96.0)
+		if !ebiten.IsKeyPressed(ebiten.KeySpace) {
+			const MaxDist = 128
+			_, jfmap := ctx.Renderer.JFMComputeUnsafeTemp(1, canvas, JFMFilled, MaxDist)
+			ctx.Renderer.JFMHeat(canvas, jfmap, 0, 0, MaxDist)
+		}
+	})
+
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
 }

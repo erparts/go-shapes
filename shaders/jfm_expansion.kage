@@ -1,0 +1,51 @@
+//kage:unit pixels
+package main
+
+// see jfm_pass.kage for further context on JFA and offsets decoding
+
+func Fragment(_ vec4, sourceCoords0 vec2, color vec4, customVAs vec4) vec4 {
+	const AAMargin = 1.333
+
+	thickness := customVAs[0]
+	colorMix := customVAs[1]
+
+	normCoords0 := (sourceCoords0 - imageSrc0Origin()) / imageSrc0Size()
+	sourceCoords1 := (normCoords0 * imageSrc1Size()) + imageSrc0Origin()
+
+	seedOffset := vec2(jfaComputeOffsetToSeed(imageSrc1At(sourceCoords1)))
+	seedDist := length(seedOffset)
+	if seedDist < 0.2 {
+		return vec4(1, 0, 0, 1)
+	}
+	if seedDist > thickness {
+		return vec4(0, 0, 0, 0)
+	}
+	v := seedDist / thickness
+	return vec4(v, v, v, v)
+
+	seedColor := imageSrc0At(sourceCoords0 + seedOffset)
+
+	// to preserve smoothness on large alpha transitions and so on,
+	// we treat the operation as a topologic lift and alpha as a
+	// "height" field
+	lift := 1.0 - smoothstep(thickness-AAMargin, thickness, seedDist)
+	lift = min(lift, 1.0-seedColor.a)
+	liftedColor := color * lift
+	seedColor += seedColor * lift
+	return mix(liftedColor, seedColor, colorMix)
+}
+
+// taken from jfm_pass.kage
+func jfaComputeOffsetToSeed(pix vec4) ivec2 {
+	return ivec2(jfaDecodeAxisOffsetToSeed(pix.xy), jfaDecodeAxisOffsetToSeed(pix.zw))
+}
+
+// taken from jfm_pass.kage
+func jfaDecodeAxisOffsetToSeed(pq vec2) int {
+	const epsilon = 0.001
+	hi := int((pq[0] + epsilon) * 255.0)
+	lo := int((pq[1] + epsilon) * 255.0)
+	magnitude := ((hi & 0x7F) << 8) | lo
+	sign := 1 - ((hi >> 7) << 1)
+	return sign * magnitude
+}

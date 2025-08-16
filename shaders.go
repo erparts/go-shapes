@@ -192,6 +192,12 @@ var shaderJFMInitFillSrc []byte
 //go:embed shaders/jfm_init_boundary.kage
 var shaderJFMInitBoundarySrc []byte
 
+//go:embed shaders/jfm_heat.kage
+var shaderJFMHeatSrc []byte
+
+//go:embed shaders/jfm_expansion.kage
+var shaderJFMExpansionSrc []byte
+
 //go:embed shaders/study_wave_funcs.kage
 var shaderStudyWaveFuncsSrc []byte
 
@@ -257,6 +263,8 @@ var shaderHalftoneTri *ebiten.Shader
 var shaderJFMPass *ebiten.Shader
 var shaderJFMInitFill *ebiten.Shader
 var shaderJFMInitBoundary *ebiten.Shader
+var shaderJFMHeat *ebiten.Shader
+var shaderJFMExpansion *ebiten.Shader
 
 var shaderStudyWaveFuncs *ebiten.Shader
 
@@ -637,6 +645,18 @@ func ensureShaderJFMInitFillLoaded() {
 func ensureShaderJFMInitBoundaryLoaded() {
 	if shaderJFMInitBoundary == nil {
 		shaderJFMInitBoundary = mustCompile(shaderJFMInitBoundarySrc)
+	}
+}
+
+func ensureShaderJFMHeatLoaded() {
+	if shaderJFMHeat == nil {
+		shaderJFMHeat = mustCompile(shaderJFMHeatSrc)
+	}
+}
+
+func ensureShaderJFMExpansionLoaded() {
+	if shaderJFMExpansion == nil {
+		shaderJFMExpansion = mustCompile(shaderJFMExpansionSrc)
 	}
 }
 

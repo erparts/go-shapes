@@ -11,9 +11,17 @@ import (
 type JFMInitMode uint8
 
 const (
+	// JFMBoundary initialization mode places the seeds on the
+	// boundary pixels of the image.
 	JFMBoundary JFMInitMode = iota
-	JFMInside
-	JFMOutside
+
+	// JFMInside initialization mode places the seeds on the filled
+	// parts of the image.
+	JFMFilled
+
+	// JFMInside initialization mode places the seeds on the empty
+	// parts of the image.
+	JFMEmpty
 )
 
 // JFMCompute computes a jumping flood map of the given source and stores it
@@ -37,7 +45,7 @@ func (r *Renderer) JFMCompute(jfmap, source *ebiten.Image, initMode JFMInitMode,
 	if maxDistance <= 0 {
 		panic("maxDistance <= 0")
 	}
-	if maxDistance > 32000 { // 32511 technically
+	if maxDistance > 32000 { // up to 32766 should be technically distinguishable
 		panic("maxDistance > 32000")
 	}
 	sbounds := source.Bounds()
@@ -54,11 +62,11 @@ func (r *Renderer) JFMCompute(jfmap, source *ebiten.Image, initMode JFMInitMode,
 	case JFMBoundary:
 		ensureShaderJFMInitBoundaryLoaded()
 		initShader = shaderJFMInitBoundary
-	case JFMInside:
+	case JFMFilled:
 		ensureShaderJFMInitFillLoaded()
 		initShader = shaderJFMInitFill
 		r.setFlatCustomVAs01(0.001, 1.0)
-	case JFMOutside:
+	case JFMEmpty:
 		ensureShaderJFMInitFillLoaded()
 		initShader = shaderJFMInitFill
 		r.setFlatCustomVAs01(0.0, 0.001)
@@ -115,6 +123,14 @@ func (r *Renderer) JFMCompute(jfmap, source *ebiten.Image, initMode JFMInitMode,
 	r.opts.Images[0] = nil
 }
 
+// JFMHeat is a debug and utility method to draw a heatmap for jfmap into the given target,
+// using 0 and maxDistance as reference distances for "hot" and "cold".
+func (r *Renderer) JFMHeat(target, jfmap *ebiten.Image, ox, oy float32, maxDistance int) {
+	ensureShaderJFMHeatLoaded()
+	r.setFlatCustomVA0(float32(maxDistance))
+	r.DrawShaderAt(target, jfmap, ox, oy, 0, 0, shaderJFMHeat)
+}
+
 // JFMComputeUnsafeTemp is a utility method that puts both source and a newly generated jumping flood map into
 // the given internal offscreen, returning references to the new images. This uses [Renderer.JFMCompute]()
 // internally, so the internal offscreen index can't be #0 and all the derived parameter conditions apply.
@@ -122,7 +138,7 @@ func (r *Renderer) JFMCompute(jfmap, source *ebiten.Image, initMode JFMInitMode,
 // For details on internal renderer offscreens, please see [Renderer.UnsafeTemp]().
 func (r *Renderer) JFMComputeUnsafeTemp(offscreenIndex int, source *ebiten.Image, initMode JFMInitMode, maxDistance int) (sourceTemp, jfmapTemp *ebiten.Image) {
 	if offscreenIndex == 0 {
-		panic("JFMComputeTemp expects an offscreenIndex > 0, as 0 is already used by JFMCompute")
+		panic("JFMComputeTemp expects an offscreenIndex > 0; #0 is already used by JFMCompute")
 	}
 	_, _, w, h := rectOriginSize(source.Bounds())
 	ox, oy := 0, 0
@@ -132,11 +148,12 @@ func (r *Renderer) JFMComputeUnsafeTemp(offscreenIndex int, source *ebiten.Image
 		ox = w
 	}
 	temp := r.UnsafeTemp(offscreenIndex, ox+w, oy+h)
+	temp.Clear()
 	var opts ebiten.DrawImageOptions
 	opts.Blend = ebiten.BlendCopy
 	temp.DrawImage(source, &opts)
 
-	sourceTemp = temp.SubImage(image.Rect(ox, oy, ox+w, oy+h)).(*ebiten.Image)
+	sourceTemp = temp.SubImage(image.Rect(0, 0, w, h)).(*ebiten.Image)
 	jfmapTemp = temp.SubImage(image.Rect(ox, oy, ox+w, oy+h)).(*ebiten.Image)
 	r.JFMCompute(jfmapTemp, sourceTemp, initMode, maxDistance)
 	return sourceTemp, jfmapTemp
@@ -144,14 +161,30 @@ func (r *Renderer) JFMComputeUnsafeTemp(offscreenIndex int, source *ebiten.Image
 
 // TODO: unimplemented
 //
-// JFMExpand performs morphological expansion.
+// JFMExpand performs morphological expansion. Thickness must be in [0, 32k].
 //
 //   - colorMix controls the outline color (0 = use vertex colors, 1 = use source colors)
 //   - jfmap can be nil, in which case it will be automatically generated for only this operation
-//     using [JFMInitInside] mode.
+//     using [JFMFilled] mode.
 //   - source and jfmap should be in the same atlas to avoid automatic atlasing issues.
 func (r *Renderer) JFMExpand(target, source, jfmap *ebiten.Image, ox, oy, thickness, colorMix float32) {
-	panic("unimplemented")
+	if thickness < 0 {
+		panic("thickness < 0")
+	}
+	if thickness > 32000 {
+		panic("thickness > 32k")
+	}
+
+	if jfmap == nil {
+		jfmapMaxDist := int(thickness + 1.0) // pick a close and safe value
+		source, jfmap = r.JFMComputeUnsafeTemp(1, source, JFMFilled, jfmapMaxDist)
+	}
+
+	ensureShaderJFMExpansionLoaded()
+	r.opts.Images[1] = jfmap
+	r.setFlatCustomVAs01(thickness, colorMix)
+	r.DrawShaderAt(target, source, ox, oy, 0, 0, shaderJFMExpansion)
+	r.opts.Images[1] = nil
 }
 
 // TODO: unimplemented
@@ -191,3 +224,5 @@ func (r *Renderer) JFMOutline(target, source, jfmap *ebiten.Image, ox, oy, inThi
 func (r *Renderer) JFMInsetContour(target, source, jfmap *ebiten.Image, ox, oy, inThickness, inOpacity, colorMix float32) {
 	panic("unimplemented")
 }
+
+//func (r *Renderr) JFMFeather(target, source, jfmap *ebiten.Image, ox, oy, radius, curve float32) {}
