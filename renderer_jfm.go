@@ -3,6 +3,7 @@ package shapes
 import (
 	"fmt"
 	"image"
+	"math"
 	"math/bits"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -15,32 +16,35 @@ const (
 	// boundary pixels of the image.
 	JFMBoundary JFMInitMode = iota
 
-	// JFMInside initialization mode places the seeds on the filled
-	// parts of the image.
-	JFMFilled
-
-	// JFMInside initialization mode places the seeds on the empty
-	// parts of the image.
-	JFMEmpty
+	// JFMPixel initialization mode places the seeds on any pixel
+	// within the specified alpha range.
+	JFMPixel
 )
+
+// AAMargin is the standard antialias margin or soft edge value
+// recommended for operations that accept it explicitly.
+const AAMargin = 1.333
 
 // JFMCompute computes a jumping flood map of the given source and stores it
 // into jfmap. source and jfmap must have the same dimensions. jfmap doesn't
 // need to be cleared before computation.
 //
 // A jumping flood map encodes offsets to nearest seeds, which are determined
-// by the given [JFMInitMode]. These maps can be used to speed up morphological
-// operations like outlining, expansion and erosion. Internal encoding details
-// are documented in jfm_pass.kage
-//
-// The maxDistance can't exceed 32k due to Ebitengine texture format limitations.
+// by the given [JFMInitMode], selected within the given [minAlpha, maxAlpha]
+// range (inclusive). Jumping flood maps can be used to speed up morphological
+// operations on solid shapes like outlining, expansion and erosion. Internal
+// encoding details are documented in jfm_pass.kage.
 //
 // The function panics if maxDistance <= 0, maxDistance > 32k, source size != jfmap
-// size or an invalid initMode is given.
+// size, minAlpha > maxAlpha, minAlpha < 0, maxAlpha > 1 or an invalid initMode is
+// given.
+//
+// For minAlpha, if you want to make the value exclusive, a typically safe epsilon
+// is 0.001. E.g., to select (0.5, 1.0], use minAlpha = 0.5 + 0.001, maxAlpha = 1.0.
 //
 // This function uses one internal offscreen (#0), and jfmap and source can be on
 // the same internal atlas.
-func (r *Renderer) JFMCompute(jfmap, source *ebiten.Image, initMode JFMInitMode, maxDistance int) {
+func (r *Renderer) JFMCompute(jfmap, source *ebiten.Image, initMode JFMInitMode, maxDistance int, minAlpha, maxAlpha float32) {
 	// safety assertions
 	if maxDistance <= 0 {
 		panic("maxDistance <= 0")
@@ -48,6 +52,16 @@ func (r *Renderer) JFMCompute(jfmap, source *ebiten.Image, initMode JFMInitMode,
 	if maxDistance > 32000 { // up to 32766 should be technically distinguishable
 		panic("maxDistance > 32000")
 	}
+	if minAlpha < 0 {
+		panic("minAlpha < 0")
+	}
+	if maxAlpha > 1 {
+		panic("maxAlpha > 1")
+	}
+	if minAlpha > maxAlpha {
+		panic("minAlpha > maxAlpha")
+	}
+
 	sbounds := source.Bounds()
 	tbounds := jfmap.Bounds()
 	sw, sh := sbounds.Dx(), sbounds.Dy()
@@ -62,17 +76,13 @@ func (r *Renderer) JFMCompute(jfmap, source *ebiten.Image, initMode JFMInitMode,
 	case JFMBoundary:
 		ensureShaderJFMInitBoundaryLoaded()
 		initShader = shaderJFMInitBoundary
-	case JFMFilled:
+	case JFMPixel:
 		ensureShaderJFMInitFillLoaded()
 		initShader = shaderJFMInitFill
-		r.setFlatCustomVAs01(0.001, 1.0)
-	case JFMEmpty:
-		ensureShaderJFMInitFillLoaded()
-		initShader = shaderJFMInitFill
-		r.setFlatCustomVAs01(0.0, 0.001)
 	default:
 		panic(initMode) // invalid JFMInitMode
 	}
+	r.setFlatCustomVAs01(minAlpha, maxAlpha)
 
 	// init
 	memoBlend := r.opts.Blend
@@ -136,7 +146,7 @@ func (r *Renderer) JFMHeat(target, jfmap *ebiten.Image, ox, oy float32, maxDista
 // internally, so the internal offscreen index can't be #0 and all the derived parameter conditions apply.
 //
 // For details on internal renderer offscreens, please see [Renderer.UnsafeTemp]().
-func (r *Renderer) JFMComputeUnsafeTemp(offscreenIndex int, source *ebiten.Image, initMode JFMInitMode, maxDistance int) (sourceTemp, jfmapTemp *ebiten.Image) {
+func (r *Renderer) JFMComputeUnsafeTemp(offscreenIndex int, source *ebiten.Image, initMode JFMInitMode, maxDistance int, minAlpha, maxAlpha float32) (sourceTemp, jfmapTemp *ebiten.Image) {
 	if offscreenIndex == 0 {
 		panic("JFMComputeTemp expects an offscreenIndex > 0; #0 is already used by JFMCompute")
 	}
@@ -155,19 +165,18 @@ func (r *Renderer) JFMComputeUnsafeTemp(offscreenIndex int, source *ebiten.Image
 
 	sourceTemp = temp.SubImage(image.Rect(0, 0, w, h)).(*ebiten.Image)
 	jfmapTemp = temp.SubImage(image.Rect(ox, oy, ox+w, oy+h)).(*ebiten.Image)
-	r.JFMCompute(jfmapTemp, sourceTemp, initMode, maxDistance)
+	r.JFMCompute(jfmapTemp, sourceTemp, initMode, maxDistance, minAlpha, maxAlpha)
 	return sourceTemp, jfmapTemp
 }
 
-// TODO: unimplemented
-//
 // JFMExpand performs morphological expansion. Thickness must be in [0, 32k].
 //
-//   - colorMix controls the outline color (0 = use vertex colors, 1 = use source colors)
 //   - jfmap can be nil, in which case it will be automatically generated for only this operation
-//     using [JFMFilled] mode.
+//     using [JFMPixel] mode with [0.001, 1.0] alpha interval (all not fully transparent pixels
+//     are seeds).
 //   - source and jfmap should be in the same atlas to avoid automatic atlasing issues.
-func (r *Renderer) JFMExpand(target, source, jfmap *ebiten.Image, ox, oy, thickness, colorMix float32) {
+//   - aaMargin is the antialias margin. [AAMargin] can be used for a reasonable default.
+func (r *Renderer) JFMExpand(target, source, jfmap *ebiten.Image, ox, oy, thickness, aaMargin float32) {
 	if thickness < 0 {
 		panic("thickness < 0")
 	}
@@ -176,13 +185,13 @@ func (r *Renderer) JFMExpand(target, source, jfmap *ebiten.Image, ox, oy, thickn
 	}
 
 	if jfmap == nil {
-		jfmapMaxDist := int(thickness + 1.0) // pick a close and safe value
-		source, jfmap = r.JFMComputeUnsafeTemp(1, source, JFMFilled, jfmapMaxDist)
+		jfmapMaxDist := max(int(math.Ceil(float64(thickness))), 1)
+		source, jfmap = r.JFMComputeUnsafeTemp(1, source, JFMPixel, jfmapMaxDist, 0.001, 1.0)
 	}
 
 	ensureShaderJFMExpansionLoaded()
 	r.opts.Images[1] = jfmap
-	r.setFlatCustomVAs01(thickness, colorMix)
+	r.setFlatCustomVAs01(thickness, aaMargin)
 	r.DrawShaderAt(target, source, ox, oy, 0, 0, shaderJFMExpansion)
 	r.opts.Images[1] = nil
 }
@@ -193,9 +202,10 @@ func (r *Renderer) JFMExpand(target, source, jfmap *ebiten.Image, ox, oy, thickn
 //
 //   - colorMix controls the outline color (0 = use vertex colors, 1 = use source colors)
 //   - jfmap can be nil, in which case it will be automatically generated for only this operation
-//     using [JFMInitInside]
+//     using [JFMPixel] mode with [0.0, 0.0] alpha interval (transparent pixels are seeds).
 //   - source and jfmap should be in the same atlas to avoid automatic atlasing issues.
-func (r *Renderer) JFMErode(target, source, jfmap *ebiten.Image, ox, oy, thickness, colorMix float32) {
+//   - aaMargin is the antialias margin. [AAMargin] can be used for a reasonable default.
+func (r *Renderer) JFMErode(target, source, jfmap *ebiten.Image, ox, oy, thickness, aaMargin, colorMix float32) {
 	panic("unimplemented")
 }
 
@@ -205,7 +215,7 @@ func (r *Renderer) JFMErode(target, source, jfmap *ebiten.Image, ox, oy, thickne
 //
 //   - colorMix controls the outline color (0 = use vertex colors, 1 = use source colors)
 //   - jfmap can be nil, in which case it will be automatically generated for only this operation
-//     using [JFMInitBoundary] mode.
+//     using [JFMBoundary] mode.
 //   - source and jfmap should be in the same atlas to avoid automatic atlasing issues.
 func (r *Renderer) JFMOutline(target, source, jfmap *ebiten.Image, ox, oy, inThickness, outThickness, inOpacity, colorMix float32) {
 	panic("unimplemented")
@@ -219,7 +229,7 @@ func (r *Renderer) JFMOutline(target, source, jfmap *ebiten.Image, ox, oy, inThi
 //
 //   - colorMix controls the outline color (0 = use vertex colors, 1 = use source colors)
 //   - jfmap can be nil, in which case it will be automatically generated for only this operation
-//     using [JFMInitBoundary] mode.
+//     using [JFMBoundary] mode.
 //   - source and jfmap should be in the same atlas to avoid automatic atlasing issues.
 func (r *Renderer) JFMInsetContour(target, source, jfmap *ebiten.Image, ox, oy, inThickness, inOpacity, colorMix float32) {
 	panic("unimplemented")

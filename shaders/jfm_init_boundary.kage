@@ -5,20 +5,20 @@ package main
 
 // this shader initializes a jfa mask based on boundary detection
 
-func Fragment(_ vec4, sourceCoords vec2, _ vec4, _ vec4) vec4 {
+func Fragment(_ vec4, sourceCoords vec2, _ vec4, customVAs vec4) vec4 {
 	pix := imageSrc0At(sourceCoords)
 	if pix.a == 0 {
 		return vec4(1) // mark as max offset / uninitialized
 	}
 
-	const thresh = 0.003 // safe threshold above 0 and below 1/255
-	var filled float
-	filled += whenGreaterOrEqualThan(imageSrc0At(sourceCoords+vec2(+0, -1)).a, thresh)
-	filled += whenGreaterOrEqualThan(imageSrc0At(sourceCoords+vec2(-1, +0)).a, thresh)
-	filled += whenGreaterOrEqualThan(imageSrc0At(sourceCoords+vec2(+1, +0)).a, thresh)
-	filled += whenGreaterOrEqualThan(imageSrc0At(sourceCoords+vec2(+0, +1)).a, thresh)
+	minAlpha, maxAlpha := customVAs[0], customVAs[1]
+	var inThresh float
+	inThresh += whenWithin(imageSrc0At(sourceCoords+vec2(+0, -1)).a, minAlpha, maxAlpha)
+	inThresh += whenWithin(imageSrc0At(sourceCoords+vec2(-1, +0)).a, minAlpha, maxAlpha)
+	inThresh += whenWithin(imageSrc0At(sourceCoords+vec2(+1, +0)).a, minAlpha, maxAlpha)
+	inThresh += whenWithin(imageSrc0At(sourceCoords+vec2(+0, +1)).a, minAlpha, maxAlpha)
 
-	if filled < 4 {
+	if inThresh < 4 {
 		return vec4(0) // this pixel is a boundary, mark as seed (offset = 0)
 	} else {
 		return vec4(1) // max offset / uninitialized
@@ -28,4 +28,9 @@ func Fragment(_ vec4, sourceCoords vec2, _ vec4, _ vec4) vec4 {
 // Returns 1 if a >= b, 0 otherwise.
 func whenGreaterOrEqualThan(a, b float) float {
 	return step(b, a)
+}
+
+// Returns 1 if min <= a <= max, 0 otherwise.
+func whenWithin(a, min, max float) float {
+	return step(min, a) * step(a, max)
 }

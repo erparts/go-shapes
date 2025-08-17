@@ -63,7 +63,7 @@ func TestJFMCompute(t *testing.T) {
 	src.Set(2, 2, color.White)
 
 	dst := ebiten.NewImage(9, 9)
-	r.JFMCompute(dst, src, JFMBoundary, 4)
+	r.JFMCompute(dst, src, JFMBoundary, 4, 0.001, 1.0)
 
 	out := image.NewRGBA(image.Rect(0, 0, 9, 9))
 	if err := ebiten.RunGame(&testOutputWriter{subject: dst, out: out.Pix}); err != nil {
@@ -113,7 +113,7 @@ func TestJFMCompute2(t *testing.T) {
 	src := ebiten.NewImage(1, 260)
 	dst := ebiten.NewImage(1, 260)
 	src.Set(0, 258, color.White)
-	r.JFMCompute(dst, src, JFMBoundary, 257)
+	r.JFMCompute(dst, src, JFMBoundary, 257, 0.001, 1.0)
 
 	out := image.NewRGBA(image.Rect(0, 0, 1, 260))
 	if err := ebiten.RunGame(&testOutputWriter{subject: dst, out: out.Pix}); err != nil {
@@ -165,11 +165,12 @@ func TestJFMExpand(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		canvas.Fill(color.Black)
 
+		bw, bh := rectSizeF32(canvas.Bounds())
 		w, h := rectSizeF32(ctx.Images[0].Bounds())
-		lx, ly := ctx.LeftClickF32()
-		ctx.DrawAtF32(canvas, ctx.Images[0], lx-w/2, ly-h/2)
-		rx, ry := ctx.RightClickF32()
-		ctx.Renderer.JFMExpand(canvas, ctx.Images[0], nil, rx-w/2, ry-h/2, 16.0, 0.0)
+		ctx.DrawAtF32(canvas, ctx.Images[0], bw/4-w/2, bh/4-h/2)
+		r := float32(ctx.DistAnim(32.0, 1.0))
+		ctx.Renderer.ApplyExpansion(canvas, ctx.Images[0], bw-bw/4-w/2, bh/4-h/2, r)
+		ctx.Renderer.JFMExpand(canvas, ctx.Images[0], nil, bw/4-w/2, bh-bh/4-h/2, r, AAMargin)
 	})
 
 	const BaseRadius = 128
@@ -194,7 +195,7 @@ func TestJFMHeat(t *testing.T) {
 		ctx.Renderer.DrawCircle(canvas, rx, ry, 96.0)
 		if !ebiten.IsKeyPressed(ebiten.KeySpace) {
 			const MaxDist = 128
-			_, jfmap := ctx.Renderer.JFMComputeUnsafeTemp(1, canvas, JFMFilled, MaxDist)
+			_, jfmap := ctx.Renderer.JFMComputeUnsafeTemp(1, canvas, JFMPixel, MaxDist, 0.001, 1.0)
 			ctx.Renderer.JFMHeat(canvas, jfmap, 0, 0, MaxDist)
 		}
 	})
