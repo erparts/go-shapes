@@ -68,6 +68,13 @@ func (ctx *TestAppCtx) DrawAtF32(target, image *ebiten.Image, ox, oy float32) {
 	target.DrawImage(image, &opts)
 }
 
+func (ctx *TestAppCtx) DrawWithAlphaAtF32(target, image *ebiten.Image, alpha, ox, oy float32) {
+	var opts ebiten.DrawImageOptions
+	opts.GeoM.Translate(float64(ox), float64(oy))
+	opts.ColorScale.ScaleAlpha(alpha)
+	target.DrawImage(image, &opts)
+}
+
 type TestApp struct {
 	BaseTestApp
 	TestAppCtx

@@ -1,0 +1,26 @@
+//kage:unit pixels
+package main
+
+func Fragment(_ vec4, sourceCoords vec2, color vec4, customVAs vec4) vec4 {
+	const MaxThickness = 32.0
+
+	thickness := customVAs[0]
+	alpha := imageSrc0At(sourceCoords).a
+	for y := 0.0; y <= MaxThickness; y += 1.0 {
+		if y >= thickness {
+			break
+		}
+
+		shift := y + 1.0
+		sampleUp := sourceCoords + vec2(0, -shift)
+		alphaUp := imageSrc0At(sampleUp).a
+		sampleDown := sourceCoords + vec2(0, shift)
+		alphaDown := imageSrc0At(sampleDown).a
+		alphaAround := max(alphaUp, alphaDown)
+
+		contrib := 1.0 - max(shift-thickness, 0)
+		alpha = max(alpha, alphaAround*contrib)
+	}
+
+	return color * alpha
+}

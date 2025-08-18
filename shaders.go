@@ -75,6 +75,12 @@ var shaderMaskThresholdSrc []byte
 //go:embed shaders/expansion.kage
 var shaderExpansionSrc []byte
 
+//go:embed shaders/expansion_vert.kage
+var shaderExpansionVertSrc []byte
+
+//go:embed shaders/expansion_horz.kage
+var shaderExpansionHorzSrc []byte
+
 //go:embed shaders/erosion.kage
 var shaderErosionSrc []byte
 
@@ -224,6 +230,8 @@ var shaderMaskHorz *ebiten.Shader
 var shaderMaskCircle *ebiten.Shader
 var shaderMaskThreshold *ebiten.Shader
 var shaderExpansion *ebiten.Shader
+var shaderExpansionVert *ebiten.Shader
+var shaderExpansionHorz *ebiten.Shader
 var shaderErosion *ebiten.Shader
 var shaderOutline *ebiten.Shader
 var shaderBlur *ebiten.Shader
@@ -411,6 +419,18 @@ func ensureShaderMaskThresholdLoaded() {
 func ensureShaderExpansionLoaded() {
 	if shaderExpansion == nil {
 		shaderExpansion = mustCompile(shaderExpansionSrc)
+	}
+}
+
+func ensureShaderExpansionVertLoaded() {
+	if shaderExpansionVert == nil {
+		shaderExpansionVert = mustCompile(shaderExpansionVertSrc)
+	}
+}
+
+func ensureShaderExpansionHorzLoaded() {
+	if shaderExpansionHorz == nil {
+		shaderExpansionHorz = mustCompile(shaderExpansionHorzSrc)
 	}
 }
 

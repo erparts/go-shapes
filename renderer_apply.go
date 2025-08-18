@@ -9,7 +9,8 @@ import (
 // Precondition: thickness can't exceed 32.
 //
 // WARNING: this is a quadratic algorithm on GPU. For large expansions,
-// consider [Renderer.JFMExpansion]() instead.
+// consider [Renderer.ApplyExpansionRect]() or [Renderer.JFMExpansion]()
+// instead, but both of those are only useful in specific situations.
 func (r *Renderer) ApplyExpansion(target *ebiten.Image, mask *ebiten.Image, ox, oy, thickness float32) {
 	if thickness > 32 {
 		panic("thickness can't exceed 32")
@@ -33,6 +34,46 @@ func (r *Renderer) ApplyExpansion(target *ebiten.Image, mask *ebiten.Image, ox, 
 	r.opts.Images[0] = mask
 	ensureShaderExpansionLoaded()
 	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderExpansion, &r.opts)
+	r.opts.Images[0] = nil
+}
+
+// ApplyExpansionRect performs double pass expansion with a square kernel.
+// This is less general but more efficient than [Renderer.ApplyExpansion]().
+//
+// Precondition: thickness can't exceed 32.
+//
+// This function uses one internal offscreen (#0), and target and mask
+// can be on the same internal atlas.
+func (r *Renderer) ApplyExpansionRect(target *ebiten.Image, mask *ebiten.Image, ox, oy, thickness float32) {
+	if thickness > 32 {
+		panic("thickness can't exceed 32")
+	}
+
+	// first pass (vert)
+	thickCeil := float32(math.Ceil(float64(thickness)))
+	sx, sy, sw, sh := rectOriginSize(mask.Bounds())
+	temp := r.getTemp(0, sw, sh+int(thickCeil)*2.0)
+	sx32, sy32, sw32, sh32 := float32(sx), float32(sy), float32(sw), float32(sh)
+	memoBlend := r.opts.Blend
+	r.opts.Blend = ebiten.BlendCopy
+	r.setSrcRectCoords(sx32, sy32-thickCeil, sx32+sw32, sy32+sh32+thickCeil)
+	r.setDstRectCoords(0, 0, sw32, sh32+thickCeil*2)
+	r.setFlatCustomVA0(thickness)
+	r.opts.Images[0] = mask
+	ensureShaderExpansionVertLoaded()
+	temp.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderExpansionVert, &r.opts)
+	r.opts.Images[0] = nil
+
+	// second pass (horz)
+	r.opts.Blend = memoBlend
+	r.setSrcRectCoords(-thickCeil, 0, sw32+thickCeil, sh32+thickCeil*2.0)
+	dx, dy := rectOriginF32(target.Bounds())
+	ox += dx
+	oy += dy
+	r.setDstRectCoords(ox-thickCeil, oy-thickCeil, ox+sw32+thickCeil, oy+sh32+thickCeil)
+	r.opts.Images[0] = temp
+	ensureShaderExpansionHorzLoaded()
+	target.DrawTrianglesShader(r.vertices[:], r.indices[:], shaderExpansionHorz, &r.opts)
 	r.opts.Images[0] = nil
 }
 

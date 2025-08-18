@@ -9,7 +9,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// go test -run ^TestApplyExpansion . -count 1
+// go test -run ^TestApplyExpansion$ . -count 1
 func TestApplyExpansion(t *testing.T) {
 	radius := float32(64.0)
 	expansion := float32(16.0)
@@ -23,6 +23,32 @@ func TestApplyExpansion(t *testing.T) {
 		ctx.Renderer.ApplyExpansion(canvas, ctx.Images[0], lx-radius, ly-radius, expansion)
 	})
 	app.Images = append(app.Images, app.Renderer.NewCircle(float64(radius)))
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// go test -run ^TestApplyExpansionRect$ . -count 1
+func TestApplyExpansionRect(t *testing.T) {
+	const Radius = 64.0
+	const Expansion = 16.0
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		canvas.Fill(color.Black)
+
+		lx, ly := ctx.LeftClickF32()
+		rx, ry := ctx.RightClickF32()
+		ctx.Renderer.SetColor(color.RGBA{255, 0, 0, 255})
+		expansion := float32(ctx.DistAnim(Expansion, 1.0))
+		ctx.Renderer.ApplyExpansionRect(canvas, ctx.Images[0], lx-Radius, ly-Radius, expansion)
+		ctx.Renderer.ApplyExpansionRect(canvas, ctx.Images[1], rx-Radius, ry-Radius, expansion)
+
+		ctx.Renderer.SetColor(color.RGBA{255, 0, 0, 255})
+		ctx.DrawWithAlphaAtF32(canvas, ctx.Images[0], 0.5, lx-Radius, ly-Radius)
+		ctx.DrawWithAlphaAtF32(canvas, ctx.Images[1], 0.5, rx-Radius, ry-Radius)
+	})
+	img1 := app.Renderer.NewRect(int(Radius*2), int(Radius*2))
+	img2 := app.Renderer.NewCircle(float64(Radius))
+	app.Images = append(app.Images, img1, img2)
 	if err := ebiten.RunGame(app); err != nil {
 		t.Fatal(err)
 	}
