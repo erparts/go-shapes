@@ -6,12 +6,12 @@ package main
 // this shader initializes a jfa mask based on boundary detection
 
 func Fragment(_ vec4, sourceCoords vec2, _ vec4, customVAs vec4) vec4 {
+	minAlpha, maxAlpha := customVAs[0], customVAs[1]
 	pix := imageSrc0At(sourceCoords)
-	if pix.a == 0 {
+	if whenWithin(pix.a, minAlpha, maxAlpha) == 1.0 {
 		return vec4(1) // mark as max offset / uninitialized
 	}
 
-	minAlpha, maxAlpha := customVAs[0], customVAs[1]
 	var inThresh float
 	inThresh += whenWithin(imageSrc0At(sourceCoords+vec2(+0, -1)).a, minAlpha, maxAlpha)
 	inThresh += whenWithin(imageSrc0At(sourceCoords+vec2(-1, +0)).a, minAlpha, maxAlpha)
@@ -23,11 +23,6 @@ func Fragment(_ vec4, sourceCoords vec2, _ vec4, customVAs vec4) vec4 {
 	} else {
 		return vec4(1) // max offset / uninitialized
 	}
-}
-
-// Returns 1 if a >= b, 0 otherwise.
-func whenGreaterOrEqualThan(a, b float) float {
-	return step(b, a)
 }
 
 // Returns 1 if min <= a <= max, 0 otherwise.

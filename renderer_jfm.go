@@ -87,7 +87,7 @@ func (r *Renderer) JFMCompute(jfmap, source *ebiten.Image, initMode JFMInitMode,
 	// init
 	memoBlend := r.opts.Blend
 	r.opts.Blend = ebiten.BlendCopy
-	temp := r.getTemp(0, sw, sh)
+	temp := r.getTemp(0, sw, sh, false)
 
 	dstOX, dstOY := float32(tbounds.Min.X), float32(tbounds.Min.Y)
 	w, h := float32(sw), float32(sh)
@@ -157,8 +157,7 @@ func (r *Renderer) JFMComputeUnsafeTemp(offscreenIndex int, source *ebiten.Image
 	} else {
 		ox = w
 	}
-	temp := r.UnsafeTemp(offscreenIndex, ox+w, oy+h)
-	temp.Clear()
+	temp := r.getTemp(offscreenIndex, ox+w, oy+h, false)
 	var opts ebiten.DrawImageOptions
 	opts.Blend = ebiten.BlendCopy
 	temp.DrawImage(source, &opts)
@@ -170,6 +169,9 @@ func (r *Renderer) JFMComputeUnsafeTemp(offscreenIndex int, source *ebiten.Image
 }
 
 // JFMExpand performs morphological expansion. Thickness must be in [0, 32k].
+// Notice that since jumping flood algorithms are based on distances to seeds,
+// the only work well for shapes with hard edges. For soft edges, pure
+// [Renderer.ApplyExpansion]() is the only real high quality option.
 //
 //   - jfmap can be nil, in which case it will be automatically generated for only this operation
 //     using [JFMPixel] mode with [0.001, 1.0] alpha interval (all not fully transparent pixels
@@ -196,17 +198,30 @@ func (r *Renderer) JFMExpand(target, source, jfmap *ebiten.Image, ox, oy, thickn
 	r.opts.Images[1] = nil
 }
 
-// TODO: unimplemented
+// JFMErode performs morphological erosion. Radius must be in [0, 32k].
 //
-// JFMErode performs morphological erosion.
-//
-//   - colorMix controls the outline color (0 = use vertex colors, 1 = use source colors)
 //   - jfmap can be nil, in which case it will be automatically generated for only this operation
 //     using [JFMPixel] mode with [0.0, 0.0] alpha interval (transparent pixels are seeds).
 //   - source and jfmap should be in the same atlas to avoid automatic atlasing issues.
 //   - aaMargin is the antialias margin. [AAMargin] can be used for a reasonable default.
-func (r *Renderer) JFMErode(target, source, jfmap *ebiten.Image, ox, oy, thickness, aaMargin, colorMix float32) {
-	panic("unimplemented")
+func (r *Renderer) JFMErode(target, source, jfmap *ebiten.Image, ox, oy, radius, aaMargin float32) {
+	if radius < 0 {
+		panic("radius < 0")
+	}
+	if radius > 32000 {
+		panic("radius > 32k")
+	}
+
+	if jfmap == nil {
+		jfmapMaxDist := max(int(math.Ceil(float64(radius))), 1)
+		source, jfmap = r.JFMComputeUnsafeTemp(1, source, JFMPixel, jfmapMaxDist, 0.0, 0.0)
+	}
+
+	ensureShaderJFMErosionLoaded()
+	r.opts.Images[1] = jfmap
+	r.setFlatCustomVAs01(radius, aaMargin)
+	r.DrawShaderAt(target, source, ox, oy, 0, 0, shaderJFMErosion)
+	r.opts.Images[1] = nil
 }
 
 // TODO: unimplemented

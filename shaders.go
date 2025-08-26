@@ -204,6 +204,9 @@ var shaderJFMHeatSrc []byte
 //go:embed shaders/jfm_expansion.kage
 var shaderJFMExpansionSrc []byte
 
+//go:embed shaders/jfm_erosion.kage
+var shaderJFMErosionSrc []byte
+
 //go:embed shaders/study_wave_funcs.kage
 var shaderStudyWaveFuncsSrc []byte
 
@@ -273,6 +276,7 @@ var shaderJFMInitFill *ebiten.Shader
 var shaderJFMInitBoundary *ebiten.Shader
 var shaderJFMHeat *ebiten.Shader
 var shaderJFMExpansion *ebiten.Shader
+var shaderJFMErosion *ebiten.Shader
 
 var shaderStudyWaveFuncs *ebiten.Shader
 
@@ -677,6 +681,12 @@ func ensureShaderJFMHeatLoaded() {
 func ensureShaderJFMExpansionLoaded() {
 	if shaderJFMExpansion == nil {
 		shaderJFMExpansion = mustCompile(shaderJFMExpansionSrc)
+	}
+}
+
+func ensureShaderJFMErosionLoaded() {
+	if shaderJFMErosion == nil {
+		shaderJFMErosion = mustCompile(shaderJFMErosionSrc)
 	}
 }
 
