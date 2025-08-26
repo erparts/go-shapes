@@ -41,6 +41,32 @@ func TestNoise(t *testing.T) {
 	}
 }
 
+// go test -run ^TestNoiseAspectRatio$ . -count 1
+func TestNoiseAspectRatio(t *testing.T) {
+	const SubWidth, SubHeight = 96 * 3, 96
+	sub := ebiten.NewImage(SubWidth, SubHeight)
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		canvas.Fill(color.Black)
+
+		anim := float32(ctx.ModAnim(1.0, 0.5))
+		sub.Clear()
+		ctx.Renderer.Noise(sub, 0.8, 0.26, anim)
+
+		var opts ebiten.DrawImageOptions
+		_, _, w, h := rectOriginSize(canvas.Bounds())
+		wF64, hF64 := float64(w), float64(h)
+		opts.GeoM.Translate(-SubWidth/2, -SubHeight/2)
+		scale := min(wF64/SubWidth, hF64/SubHeight)
+		opts.GeoM.Scale(scale, scale)
+		opts.GeoM.Translate(wF64/2, hF64/2)
+		canvas.DrawImage(sub, &opts)
+	})
+
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
+
 // go test -run ^TestNoiseGolden$ . -count 1
 func TestNoiseGolden(t *testing.T) {
 	anim := float32(0.0)
