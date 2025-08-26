@@ -7,7 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// go test -run ^TestGoldenRatioGen . -count 1
+// go test -run ^TestGoldenRatioGen$ . -count 1
 func TestGoldenRatioGen(t *testing.T) {
 	const BarWidth, BarHeight = 32, 96
 	const Intersp = 4

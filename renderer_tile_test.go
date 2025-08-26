@@ -7,7 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// go test -run ^TestTileRectsGrid . -count 1
+// go test -run ^TestTileRectsGrid$ . -count 1
 func TestTileRectsGrid(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		canvas.Fill(color.Black)
@@ -19,7 +19,7 @@ func TestTileRectsGrid(t *testing.T) {
 	}
 }
 
-// go test -run ^TestTileDotsHex . -count 1
+// go test -run ^TestTileDotsHex$ . -count 1
 func TestTileDotsHex(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		canvas.Fill(color.Black)
@@ -35,7 +35,7 @@ func TestTileDotsHex(t *testing.T) {
 	}
 }
 
-// go test -run ^TestTileDotsGrid . -count 1
+// go test -run ^TestTileDotsGrid$ . -count 1
 func TestTileDotsGrid(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		canvas.Fill(color.Black)
@@ -50,7 +50,7 @@ func TestTileDotsGrid(t *testing.T) {
 	}
 }
 
-// go test -run ^TestTileTriUpGrid . -count 1
+// go test -run ^TestTileTriUpGrid$ . -count 1
 func TestTileTriUpGrid(t *testing.T) {
 	const inSize = 24
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
@@ -69,7 +69,7 @@ func TestTileTriUpGrid(t *testing.T) {
 	}
 }
 
-// go test -run ^TestTileTriHex . -count 1
+// go test -run ^TestTileTriHex$ . -count 1
 func TestTileTriHex(t *testing.T) {
 	const minInSize = 12
 	const maxInSize = 30

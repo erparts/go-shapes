@@ -9,7 +9,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// go test -run ^TestMap ./... -count 1
+// go test -run ^TestMap$ . -count 1
 func TestMap(t *testing.T) {
 	const CardWidth, CardHeight = 128, 164
 	card := newCardWaver(CardWidth, CardHeight)
@@ -50,6 +50,7 @@ func TestMap(t *testing.T) {
 	}
 }
 
+// go test -run ^TestMapProjectiveStress$ . -count 1
 func TestMapProjectiveStress(t *testing.T) {
 	const CardWidth, CardHeight = 32, 48
 	const NumRows = 9

@@ -8,7 +8,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// go test -run ^TestDrawShapes . -count 1
+// go test -run ^TestDrawShapes$ . -count 1
 func TestDrawShapes(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		canvas.Fill(color.Black)
@@ -40,7 +40,7 @@ func TestDrawShapes(t *testing.T) {
 	}
 }
 
-// go test -run ^TestDrawArea . -count 1
+// go test -run ^TestDrawArea$ . -count 1
 func TestDrawArea(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		lx, ly := ctx.LeftClickF32()
@@ -61,7 +61,7 @@ func TestDrawArea(t *testing.T) {
 	}
 }
 
-// go test -run ^TestDrawIntArea . -count 1
+// go test -run ^TestDrawIntArea$ . -count 1
 func TestStrokeIntArea(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		lx, ly := ctx.LeftClick.X, ctx.LeftClick.Y
@@ -91,7 +91,7 @@ func TestStrokeIntArea(t *testing.T) {
 	}
 }
 
-// go test -run ^TestStrokeArea . -count 1
+// go test -run ^TestStrokeArea$ . -count 1
 func TestStrokeArea(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		lx, ly := ctx.LeftClickF32()
@@ -124,7 +124,7 @@ func TestStrokeArea(t *testing.T) {
 	}
 }
 
-// go test -run ^TestStrokeCircle . -count 1
+// go test -run ^TestStrokeCircle$ . -count 1
 func TestStrokeCircle(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		lx, ly := ctx.LeftClickF32()
@@ -145,7 +145,7 @@ func TestStrokeCircle(t *testing.T) {
 	}
 }
 
-// go test -run ^TestDrawEllipse . -count 1
+// go test -run ^TestDrawEllipse$ . -count 1
 func TestDrawEllipse(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		lx, ly := ctx.LeftClickF32()
@@ -168,7 +168,7 @@ func TestDrawEllipse(t *testing.T) {
 	}
 }
 
-// go test -run ^TestDrawRing . -count 1
+// go test -run ^TestDrawRing$ . -count 1
 func TestDrawRing(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		lx, ly := ctx.LeftClickF32()

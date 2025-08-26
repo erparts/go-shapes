@@ -9,7 +9,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// go test -run ^TestFlatPaint . -count 1
+// go test -run ^TestFlatPaint$ . -count 1
 func TestFlatPaint(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		canvas.Fill(color.Black)
@@ -38,7 +38,7 @@ func TestFlatPaint(t *testing.T) {
 	}
 }
 
-// go test -run ^TestGradient . -count 1
+// go test -run ^TestGradient$ . -count 1
 func TestGradient(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		canvas.Fill(color.Black)
@@ -65,7 +65,7 @@ func TestGradient(t *testing.T) {
 	}
 }
 
-// go test -run ^TestGradientRadial . -count 1
+// go test -run ^TestGradientRadial$ . -count 1
 func TestGradientRadial(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		canvas.Fill(color.Black)
@@ -137,7 +137,7 @@ func TestColorizeByLightness(t *testing.T) {
 	}
 }
 
-// go test -run ^TestOklabShift . -count 1
+// go test -run ^TestOklabShift$ . -count 1
 func TestOklabShift(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		canvas.Fill(color.Black)
@@ -160,7 +160,7 @@ func TestOklabShift(t *testing.T) {
 	}
 }
 
-// go test -run ^TestDitherMat4 . -count 1
+// go test -run ^TestDitherMat4$ . -count 1
 func TestDitherMat4(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		canvas.Fill(color.RGBA{128, 0, 128, 255})
@@ -211,7 +211,7 @@ func combineDitherMat4(a, b [16]float32) [16]float32 {
 	return out
 }
 
-// go test -run ^TestColorMix . -count 1
+// go test -run ^TestColorMix$ . -count 1
 func TestColorMix(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		canvas.Fill(color.Black)

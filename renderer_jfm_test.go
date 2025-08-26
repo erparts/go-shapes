@@ -170,7 +170,32 @@ func TestJFMExpand(t *testing.T) {
 		ctx.DrawAtF32(canvas, ctx.Images[0], bw/4-w/2, bh/4-h/2)
 		r := float32(ctx.DistAnim(32.0, 1.0))
 		ctx.Renderer.ApplyExpansion(canvas, ctx.Images[0], bw-bw/4-w/2, bh/4-h/2, r)
-		ctx.Renderer.JFMExpand(canvas, ctx.Images[0], nil, bw/4-w/2, bh-bh/4-h/2, r, AAMargin)
+		ctx.Renderer.JFMExpand(canvas, ctx.Images[0], nil, bw/4-w/2, bh-bh/4-h/2, r, AAMargin*8)
+	})
+
+	const BaseRadius = 128
+	circle := ebiten.NewImage(BaseRadius*2, BaseRadius*2)
+	app.Renderer.GradientRadial(circle, BaseRadius, BaseRadius, color.RGBA{0, 196, 255, 255}, color.RGBA{0, 0, 0, 0}, BaseRadius*0.25, BaseRadius*0.75, BaseRadius, -1, 3.0)
+	app.Renderer.SetBlend(ebiten.BlendSourceAtop)
+	app.Renderer.Gradient(circle, nil, 0, 0, color.RGBA{196, 64, 0, 196}, color.RGBA{64, 16, 0, 64}, -1.0, DirRadsBLTR, 0.75)
+	app.Renderer.SetBlend(ebiten.BlendSourceOver)
+	app.Images = append(app.Images, circle)
+	if err := ebiten.RunGame(app); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// go test -run ^TestJFMErode$ . -count 1
+func TestJFMErode(t *testing.T) {
+	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
+		canvas.Fill(color.Black)
+
+		bw, bh := rectSizeF32(canvas.Bounds())
+		w, h := rectSizeF32(ctx.Images[0].Bounds())
+		ctx.DrawAtF32(canvas, ctx.Images[0], bw/4-w/2, bh/4-h/2)
+		r := float32(ctx.DistAnim(32.0, 1.0))
+		ctx.Renderer.ApplyErosion(canvas, ctx.Images[0], bw-bw/4-w/2, bh/4-h/2, r)
+		ctx.Renderer.JFMErode(canvas, ctx.Images[0], nil, bw/4-w/2, bh-bh/4-h/2, r, AAMargin)
 	})
 
 	const BaseRadius = 128

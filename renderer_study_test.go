@@ -9,7 +9,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// go test -run ^TestStudyWaveFuncs . -count 1
+// go test -run ^TestStudyWaveFuncs$ . -count 1
 func TestStudyWaveFuncs(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		canvas.Fill(color.Black)
