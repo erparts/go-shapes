@@ -5,8 +5,7 @@ func Fragment(targetCoords vec4, _ vec2, color vec4, customVAs vec4) vec4 {
 	intensity := customVAs[0]
 	seed := customVAs[1]
 	cycle := customVAs[2]
-	size := imageDstSize()
-	xyz := vec3((targetCoords.xy-imageDstOrigin())/max(size.x, size.y), seed)
+	xyz := vec3((targetCoords.xy-imageDstOrigin())/imageDstSize(), seed)
 
 	value := hash3A(xyz)
 	if cycle > 0 { // avoid branch if anim not used

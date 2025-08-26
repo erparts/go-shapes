@@ -11,7 +11,12 @@ import (
 // value from 0 to 1 and looping back to zero will create a continuous, looping animation
 // with an organic feel. If you don't need animation, leave cycle to zero to reduce shader
 // calculations.
+//
+// Seed must be in [0, 1].
 func (r *Renderer) Noise(target *ebiten.Image, intensity float32, seed, cycle float32) {
+	if seed < 0.0 || seed > 1.0 {
+		panic("seed must be in [0..1]")
+	}
 	ensureShaderNoiseLoaded()
 	r.setFlatCustomVAs(intensity, seed, cycle, 0.0)
 	r.DrawShader(target, 0, 0, shaderNoise)
