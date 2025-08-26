@@ -52,7 +52,7 @@ func (r *Renderer) ApplyExpansionRect(target *ebiten.Image, mask *ebiten.Image, 
 	// first pass (vert)
 	thickCeil := float32(math.Ceil(float64(thickness)))
 	sx, sy, sw, sh := rectOriginSize(mask.Bounds())
-	temp := r.getTemp(0, sw, sh+int(thickCeil)*2.0)
+	temp := r.getTemp(0, sw, sh+int(thickCeil)*2.0, false)
 	sx32, sy32, sw32, sh32 := float32(sx), float32(sy), float32(sw), float32(sh)
 	memoBlend := r.opts.Blend
 	r.opts.Blend = ebiten.BlendCopy
@@ -186,7 +186,7 @@ func (r *Renderer) ApplyBlur2(target *ebiten.Image, mask *ebiten.Image, ox, oy, 
 	srcBounds := mask.Bounds()
 	w32, h32 := float32(srcBounds.Dx()), float32(srcBounds.Dy())+radius
 	w, h := int(w32), int(math.Ceil(float64(h32)))
-	tmp := r.getTemp(0, w, h)
+	tmp := r.getTemp(0, w, h, false)
 	preBlend := r.opts.Blend
 	r.opts.Blend = ebiten.BlendCopy
 	hrCeil := ceilF32(radius / 2.0)
@@ -412,7 +412,7 @@ func (r *Renderer) ApplyGlow(target *ebiten.Image, mask *ebiten.Image, ox, oy, h
 	srcWidth, srcHeight := float32(srcBounds.Dx()), float32(srcBounds.Dy())
 	w32, h32 := float32(srcWidth), float32(srcHeight)+vertRadius
 	w, h := int(w32), int(math.Ceil(float64(h32)))
-	tmp := r.getTemp(0, w, h)
+	tmp := r.getTemp(0, w, h, false)
 
 	hr32 := vertRadius / 2.0
 	r.setDstRectCoords(0, 0, w32, h32+2)
@@ -616,9 +616,9 @@ func (r *Renderer) applyKernelD4(target *ebiten.Image, mask *ebiten.Image, ox, o
 	dkernImgWidth, dkernImgHeight := math.Ceil(dkernW64)+2, math.Ceil(dkernH64)+2
 
 	// get offscreens and smart clears
-	dkern := r.getTemp(0, int(dkernImgWidth), int(dkernImgHeight)) // get first as the biggest offscreen
-	down := r.getTemp(0, int(downImgWidth), int(downImgHeight))    // shared with dkern
-	dkernHorz := r.getTemp(1, int(dkernImgWidth), int(downImgHeight))
+	dkern := r.getTemp(0, int(dkernImgWidth), int(dkernImgHeight), false) // get first as the biggest offscreen
+	down := r.getTemp(0, int(downImgWidth), int(downImgHeight), false)    // shared with dkern
+	dkernHorz := r.getTemp(1, int(dkernImgWidth), int(downImgHeight), false)
 	preBlend := r.opts.Blend
 	r.opts.Blend = ebiten.BlendClear
 	r.StrokeIntRect(down, down.Bounds(), 0, 2)

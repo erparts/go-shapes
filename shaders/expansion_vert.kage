@@ -22,5 +22,6 @@ func Fragment(_ vec4, sourceCoords vec2, color vec4, customVAs vec4) vec4 {
 		alpha = max(alpha, alphaAround*contrib)
 	}
 
+	alpha = pow(alpha, 1.0/2.2)
 	return color * alpha
 }
