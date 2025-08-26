@@ -145,14 +145,21 @@ func (r *Renderer) Scale(target, source *ebiten.Image, ox, oy, scale float32, sc
 // offscreen can panic or fail in any other way if an offscreen returned by this function
 // if passed as an input parameter.
 func (r *Renderer) UnsafeTemp(offscreenIndex int, w, h int) *ebiten.Image {
-	return r.getTemp(offscreenIndex, w, h)
+	return r.getTemp(offscreenIndex, w, h, false)
+}
+
+// UnsafeTempClear behaves like UnsafeTemp but returns a cleared image, including 1
+// extra pixel of clear padding to prevent problems with bleeding edges.
+func (r *Renderer) UnsafeTempClear(offscreenIndex int, w, h int) *ebiten.Image {
+	return r.getTemp(offscreenIndex, w, h, true)
 }
 
 // UnsafeTempCopy calls [Renderer.UnsafeTemp]() and copies the contents of source into
-// the returned offscreen. See safety warnings and docs for UnsafeTemp.
-func (r *Renderer) UnsafeTempCopy(offscreenIndex int, source *ebiten.Image) *ebiten.Image {
+// the returned offscreen. See safety warnings and docs for UnsafeTemp. The 'clear'
+// argument allows specifying whether a 1 pixel clear margin is required or not.
+func (r *Renderer) UnsafeTempCopy(offscreenIndex int, source *ebiten.Image, clear bool) *ebiten.Image {
 	bounds := source.Bounds()
-	temp := r.UnsafeTemp(offscreenIndex, bounds.Dx(), bounds.Dy())
+	temp := r.getTemp(offscreenIndex, bounds.Dx(), bounds.Dy(), clear)
 	var opts ebiten.DrawImageOptions
 	opts.Blend = ebiten.BlendCopy
 	temp.DrawImage(source, &opts)
@@ -221,12 +228,13 @@ func (r *Renderer) SetCustomVAs(vas ...float32) {
 	}
 }
 
-func (r *Renderer) getTemp(offscreenIndex int, w, h int) *ebiten.Image {
+func (r *Renderer) getTemp(offscreenIndex int, w, h int, clear bool) *ebiten.Image {
 	if offscreenIndex >= len(r.temps) {
 		growth := offscreenIndex + 1 - len(r.temps)
 		r.temps = slices.Grow(r.temps, growth)
 		r.temps = r.temps[:offscreenIndex+1]
 		r.temps[offscreenIndex] = newOffscreen(0, 0, 64)
+		clear = false // we have already cleared, skip requirement
 	}
-	return r.temps[offscreenIndex].WithSize(w, h)
+	return r.temps[offscreenIndex].WithSize(w, h, clear)
 }
