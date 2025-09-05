@@ -162,6 +162,9 @@ var shaderMapQuad4Src []byte
 //go:embed shaders/warp_barrel.kage
 var shaderWarpBarrelSrc []byte
 
+//go:embed shaders/warp_pincushion_quad.kage
+var shaderWarpPincushionQuadSrc []byte
+
 //go:embed shaders/warp_arc.kage
 var shaderWarpArcSrc []byte
 
@@ -262,6 +265,7 @@ var shaderDitherMat4 *ebiten.Shader
 var shaderMapQuad4 *ebiten.Shader
 var shaderMapProjective *ebiten.Shader
 var shaderWarpBarrel *ebiten.Shader
+var shaderWarpPincushionQuad *ebiten.Shader
 var shaderWarpArc *ebiten.Shader
 var shaderNoise *ebiten.Shader
 var shaderNoiseGolden *ebiten.Shader
@@ -597,6 +601,12 @@ func ensureShaderMapProjectiveLoaded() {
 func ensureShaderWarpBarrelLoaded() {
 	if shaderWarpBarrel == nil {
 		shaderWarpBarrel = mustCompile(shaderWarpBarrelSrc)
+	}
+}
+
+func ensureShaderWarpPincushionQuadLoaded() {
+	if shaderWarpPincushionQuad == nil {
+		shaderWarpPincushionQuad = mustCompile(shaderWarpPincushionQuadSrc)
 	}
 }
 

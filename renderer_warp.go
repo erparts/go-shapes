@@ -12,13 +12,44 @@ import (
 //
 // The size of the output image will always be equal or smaller than the
 // input source, as the corner vertices are warped towards the interior.
+//
+// If both warp values are <= 0, a quadratic curve-based pincushion effect
+// will be used instead. Notice that very large warp factors in both axes
+// will make the image start to "shrink".
+//
+// For visually pleasing effects, you usually want to normalize the warps
+// by the image aspect ratio.
+//
+// Notice that the effects are designed to be adjustable per axis and fast.
+// More mathematically accurate atan/sin based warps are possible, but for
+// soft warps the quadratic versions are pleasant enough.
+//
+// Warps of different signs will panic.
 func (r *Renderer) WarpBarrel(target, source *ebiten.Image, ox, oy float32, horzWarp, vertWarp float32) {
-	if horzWarp < 0 || vertWarp < 0 {
-		panic("horzWarp < 0 || vertWarp < 0")
+	if (horzWarp < 0 || vertWarp < 0) && (horzWarp > 0 || vertWarp > 0) {
+		panic("horzWarp and vertWarp must have the same sign")
+	}
+	if horzWarp <= 0 && vertWarp <= 0 {
+		r.warpPincushionQuad(target, source, ox, oy, -horzWarp, -vertWarp)
+		return
 	}
 	r.setFlatCustomVAs01(horzWarp, vertWarp)
 	ensureShaderWarpBarrelLoaded()
 	r.DrawShaderAt(target, source, ox, oy, 0, 0, shaderWarpBarrel)
+}
+
+func (r *Renderer) warpPincushionQuad(target, source *ebiten.Image, ox, oy float32, horzWarp, vertWarp float32) {
+	if horzWarp < 0 || vertWarp < 0 {
+		panic("horzWarp < 0 || vertWarp < 0")
+	}
+
+	// perceptual adjustment to better match WarpBarrel strength
+	horzWarp *= 0.2
+	vertWarp *= 0.2
+
+	r.setFlatCustomVAs01(horzWarp, vertWarp)
+	ensureShaderWarpPincushionQuadLoaded()
+	r.DrawShaderAt(target, source, ox, oy, 0, 0, shaderWarpPincushionQuad)
 }
 
 // WarpArc projects the given source image onto a curved arc on target.

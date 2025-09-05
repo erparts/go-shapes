@@ -13,7 +13,7 @@ import (
 func TestWarpBarrel(t *testing.T) {
 	app := NewTestApp(func(canvas *ebiten.Image, ctx TestAppCtx) {
 		canvas.Fill(color.Black)
-		d := float32(ctx.DistAnim(1.5, 0.5))
+		d := 4.0 - float32(ctx.DistAnim(8.0, 0.5))
 		ctx.Renderer.WarpBarrel(canvas, ctx.Images[0], 64, 32, d/2.0, d)
 	})
 	w, h := 640/2, 480/2
